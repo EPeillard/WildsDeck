@@ -24,6 +24,53 @@ describe("metric resolver", () => {
     expect(resolveMetric(snapshot, { metric: "monster.hp" })).toMatchObject({ value: "62%", percent: 62, style: "gauge" });
   });
 
+  it("ranks active ailments before higher inactive buildup", () => {
+    const snapshot: ConnectionSnapshot = {
+      bridgeConnected: true,
+      state: {
+        connected: true,
+        mode: "hunt",
+        timestamp: new Date().toISOString(),
+        monster: {
+          ailments: [
+            { id: "poison", name: "Poison", active: false, current: 90, max: 100, percent: 90 },
+            { id: "stun", name: "Stun", active: true, current: 30, max: 100, percent: 30 },
+            { id: "sleep", name: "Sleep", active: false, current: 70, max: 100, percent: 70 }
+          ]
+        }
+      }
+    };
+
+    expect(resolveMetric(snapshot, { metric: "monster.ailment.primary" })).toMatchObject({
+      label: "Stun",
+      value: "ACTIVE",
+      tone: "danger"
+    });
+    expect(resolveMetric(snapshot, { metric: "monster.ailment.secondary" })).toMatchObject({
+      label: "Poison",
+      value: "90%",
+      percent: 90,
+      style: "gauge"
+    });
+  });
+
+  it("shows NONE when no ailment has useful state", () => {
+    const snapshot: ConnectionSnapshot = {
+      bridgeConnected: true,
+      state: {
+        connected: true,
+        mode: "hunt",
+        timestamp: new Date().toISOString(),
+        monster: { ailments: [] }
+      }
+    };
+    expect(resolveMetric(snapshot, { metric: "monster.ailment.primary" })).toMatchObject({
+      label: "AILMENT",
+      value: "NONE",
+      tone: "inactive"
+    });
+  });
+
   it("renders a named material collector as slots used out of 16", () => {
     const snapshot: ConnectionSnapshot = {
       bridgeConnected: true,
