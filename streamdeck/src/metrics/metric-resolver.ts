@@ -46,6 +46,8 @@ export function resolveMetric(snapshot: ConnectionSnapshot, settings: MetricSett
     case "monster.part.head": return part(settings, "HEAD", state, ["head"], 0);
     case "monster.part.body": return part(settings, "BODY", state, ["body", "torso"], 1);
     case "monster.part.tail": return part(settings, "TAIL", state, ["tail"], 2);
+    case "monster.ailment.primary": return relevantAilment(settings, "AILMENT", state, 0);
+    case "monster.ailment.secondary": return relevantAilment(settings, "NEXT", state, 1);
     case "monster.ailment.0": return ailment(settings, "STATUS 1", state.monster?.ailments?.[0]);
     case "monster.ailment.1": return ailment(settings, "STATUS 2", state.monster?.ailments?.[1]);
     case "player.name": return text(settings, "PLAYER", state.player?.name);
@@ -107,6 +109,18 @@ function part(settings: MetricSettings, label: string, state: WildsState, names:
 function partGauge(settings: MetricSettings, label: string, value: MonsterPartState): MetricView {
   if (value.broken) return view(settings, label, "BROKEN", "status", "good", value.name);
   return gauge(settings, label, value.percent, value.name, "warning");
+}
+
+function relevantAilment(settings: MetricSettings, label: string, state: WildsState, rank: number): MetricView {
+  const ranked = [...(state.monster?.ailments ?? [])]
+    .filter((value) => value.active || Number.isFinite(value.percent))
+    .sort((a, b) => {
+      if (a.active !== b.active) return a.active ? -1 : 1;
+      return (b.percent ?? -1) - (a.percent ?? -1);
+    });
+  const selected = ranked[rank];
+  if (!selected) return view(settings, label, "NONE", "status", "inactive");
+  return ailment(settings, label, selected);
 }
 
 function ailment(settings: MetricSettings, label: string, value?: AilmentState): MetricView {
