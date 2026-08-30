@@ -42,13 +42,15 @@ describe("metric resolver", () => {
     };
 
     expect(resolveMetric(snapshot, { metric: "monster.ailment.primary" })).toMatchObject({
-      label: "Stun",
-      value: "ACTIVE",
+      label: "AILMENT",
+      value: "Stun",
+      detail: "ACTIVE",
       tone: "danger"
     });
     expect(resolveMetric(snapshot, { metric: "monster.ailment.secondary" })).toMatchObject({
-      label: "Poison",
-      value: "90%",
+      label: "NEXT",
+      value: "Poison",
+      detail: "90%",
       percent: 90,
       style: "gauge"
     });
@@ -68,6 +70,39 @@ describe("metric resolver", () => {
       label: "AILMENT",
       value: "NONE",
       tone: "inactive"
+    });
+  });
+
+  it("ranks dynamic parts and disambiguates duplicate Blangonga heads", () => {
+    const snapshot: ConnectionSnapshot = {
+      bridgeConnected: true,
+      state: {
+        connected: true,
+        mode: "hunt",
+        timestamp: new Date().toISOString(),
+        monster: {
+          id: 7,
+          parts: [
+            { id: "0", name: "Part 1", type: "flinch", current: 60, max: 100, percent: 60 },
+            { id: "7", name: "Part 8", type: "breakable", breakable: true, current: 35, max: 100, percent: 35, breakCount: 0, maxBreaks: 2 },
+            { id: "8", name: "Part 9", type: "severable", severable: true, current: 45, max: 100, percent: 45, breakCount: 1, maxBreaks: 2 }
+          ]
+        }
+      }
+    };
+
+    expect(resolveMetric(snapshot, { metric: "monster.part.primary" })).toMatchObject({
+      label: "PART 1",
+      value: "Head 3",
+      detail: "45% · SEVERABLE · 1/2",
+      percent: 45,
+      tone: "danger"
+    });
+    expect(resolveMetric(snapshot, { metric: "monster.part.secondary" })).toMatchObject({
+      label: "PART 2",
+      value: "Head 2",
+      detail: "35% · BREAKABLE · 0/2",
+      percent: 35
     });
   });
 
