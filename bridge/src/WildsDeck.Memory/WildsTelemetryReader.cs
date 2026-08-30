@@ -120,10 +120,10 @@ public sealed class WildsTelemetryReader
 
     private MonsterCandidate? ReadMonsterCandidate(nint address, nint cameraTarget)
     {
-        nint magic = _resolver.ResolvePointerPath(address, "Monster::Magic");
-        if (unchecked((int)magic) != 0x6D0045)
-            return null;
-
+        // Monster::Magic is currently unusable on Wilds 1.42.0.2: every entry's
+        // pointer path resolves through a null pointer, while BasicData and Context
+        // remain stable and match HunterPie's structures. Validate candidates from
+        // BasicData instead and use Context to identify the camera-selected monster.
         nint basic = _resolver.ResolvePointerPath(address, "Monster::BasicData");
         byte enabled = _memory.Read<byte>(basic + 0x10);
         int id = _memory.Read<int>(basic + 0x48);
