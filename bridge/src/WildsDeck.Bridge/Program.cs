@@ -1,6 +1,27 @@
 using WildsDeck.Bridge;
+using WildsDeck.Memory;
 
 BridgeOptions options = BridgeOptions.Load(args);
+
+if (args.Contains("--diagnose-hunt", StringComparer.OrdinalIgnoreCase))
+{
+    WildsAttachResult attach = WildsProcess.TryAttach(options.ProcessName, options.MapDirectory);
+    if (attach.Process is null)
+    {
+        Console.Error.WriteLine(attach.ErrorMessage ?? "Could not attach to Monster Hunter Wilds.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    using WildsProcess process = attach.Process;
+    Console.WriteLine($"WildsDeck Hunt Diagnostics - Wilds {process.Version}");
+    Console.WriteLine($"Map: {Path.GetFileName(process.MapPath)}");
+    Console.WriteLine();
+    foreach (string line in HuntDiagnostics.Probe(process))
+        Console.WriteLine(line);
+    return;
+}
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls($"http://127.0.0.1:{options.WebSocketPort}");
 builder.Logging.ClearProviders();
@@ -42,4 +63,3 @@ Console.WriteLine();
 await app.RunAsync();
 
 public partial class Program;
-
