@@ -147,7 +147,7 @@ public static class TelemetryMath
         if (current is null || maximum is null || maximum <= 0 || !float.IsFinite(current.Value) || !float.IsFinite(maximum.Value))
             return null;
 
-        return Math.Clamp(current.Value / maximum.Value * 100f, 0f, 100f);
+        return NormalizePercent((double)current.Value / maximum.Value * 100d);
     }
 
     public static float? Share(float? value, IEnumerable<float?> values)
@@ -156,7 +156,9 @@ public static class TelemetryMath
             return null;
 
         float total = values.Where(static item => item is >= 0 && float.IsFinite(item.Value)).Sum(static item => item!.Value);
-        return total > 0 ? Math.Clamp(value.Value / total * 100f, 0f, 100f) : null;
+        return total > 0 ? NormalizePercent((double)value.Value / total * 100d) : null;
     }
-}
 
+    private static float NormalizePercent(double value) =>
+        MathF.Round(Math.Clamp((float)value, 0f, 100f), 4, MidpointRounding.AwayFromZero);
+}
