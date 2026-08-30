@@ -304,7 +304,7 @@ public sealed class WildsTelemetryReader
         nint gear = _resolver.ResolvePointerPath(local, "Player::Gear");
         string? weapon = WildsKnowledgeBase.WeaponName(_memory.Read<byte>(gear + 0xC8));
         float? damage = TryValue(ReadLocalDamage);
-        (float? Attack, float? Affinity) status = Try(() => ReadPlayerStatus(local)) ?? default;
+        (float? Attack, float? Affinity) status = Try(() => ReadPlayerStatus(local));
         return new PlayerSnapshot(local, name, weapon, damage, status.Attack, status.Affinity);
     }
 
