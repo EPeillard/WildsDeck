@@ -93,11 +93,17 @@ public sealed record MonsterPartState
 {
     public required string Id { get; init; }
     public string? Name { get; init; }
+    public string? Type { get; init; }
     public float? Current { get; init; }
     public float? Max { get; init; }
     public float? Percent => TelemetryMath.Percentage(Current, Max);
-    public bool? Broken { get; init; }
+    public bool? Breakable { get; init; }
     public bool? Severable { get; init; }
+    public bool? Broken { get; init; }
+    public int? BreakCount { get; init; }
+    public int? MaxBreaks { get; init; }
+    public int? ResetCount { get; init; }
+    public int? BreakMultiplier { get; init; }
 }
 
 public sealed record AilmentState
