@@ -47,8 +47,24 @@ public sealed class TelemetryHub(BridgeOptions options, ILogger<TelemetryHub> lo
         finally
         {
             _clients.TryRemove(id, out _);
+
             if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "WildsDeck closing", CancellationToken.None);
+            {
+                try
+                {
+                    using CancellationTokenSource closeTimeout = new(TimeSpan.FromMilliseconds(250));
+                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "WildsDeck closing", closeTimeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    socket.Abort();
+                }
+                catch (WebSocketException)
+                {
+                    socket.Abort();
+                }
+            }
+
             socket.Dispose();
             logger.LogInformation("Stream Deck client disconnected ({Count} total)", ClientCount);
         }
