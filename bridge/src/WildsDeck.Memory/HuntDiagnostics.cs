@@ -2,7 +2,7 @@ namespace WildsDeck.Memory;
 
 public static class HuntDiagnostics
 {
-    public static IReadOnlyList<string> Probe(WildsProcess process, int maximumEntries = 20)
+    public static IReadOnlyList<string> Probe(WildsProcess process, int maximumEntries = 700)
     {
         var lines = new List<string>();
         ProcessMemoryReader memory = process.Memory;
@@ -36,44 +36,65 @@ public static class HuntDiagnostics
             }
 
             nint[] entries = memory.ReadArray<nint>(elements + 0x20, count);
-            int accepted = 0;
             int inspected = 0;
+            int accepted = 0;
+            int invalidEntryPointers = 0;
+            int pointerPathErrors = 0;
+            int wrongMagic = 0;
+            int disabled = 0;
+            int wrongCategory = 0;
+            int invalidIds = 0;
 
             foreach (nint address in entries)
             {
-                if (!MemoryAddressResolver.IsValidPointer(address))
-                    continue;
-                if (inspected++ >= maximumEntries)
+                if (inspected >= maximumEntries)
                     break;
+                inspected++;
+
+                if (!MemoryAddressResolver.IsValidPointer(address))
+                {
+                    invalidEntryPointers++;
+                    continue;
+                }
 
                 try
                 {
                     nint magicRaw = resolver.ResolvePointerPath(address, "Monster::Magic");
                     int magic = unchecked((int)magicRaw);
+                    if (magic != 0x6D0045)
+                    {
+                        wrongMagic++;
+                        continue;
+                    }
+
                     nint basic = resolver.ResolvePointerPath(address, "Monster::BasicData");
                     byte enabled = memory.Read<byte>(basic + 0x10);
                     int id = memory.Read<int>(basic + 0x48);
                     int category = memory.Read<int>(basic + 0x54);
+
+                    if (enabled != 1) disabled++;
+                    if (category != 0) wrongCategory++;
+                    if (id < 0) invalidIds++;
+
                     nint context = resolver.ResolvePointerPath(address, "Monster::Context");
                     bool target = context == cameraTarget;
-                    bool valid = magic == 0x6D0045 && enabled == 1 && category == 0 && id >= 0;
-                    if (valid)
-                        accepted++;
+                    bool valid = enabled == 1 && category == 0 && id >= 0;
 
-                    lines.Add($"Entry 0x{address:X}: magicRaw=0x{magicRaw:X} magic32=0x{magic:X} enabled={enabled} id={id} category={category} context=0x{context:X} target={target} VALID={valid}");
+                    lines.Add($"MAGIC MATCH 0x{address:X}: magicRaw=0x{magicRaw:X} enabled={enabled} id={id} category={category} context=0x{context:X} target={target} VALID={valid}");
 
-                    if (valid)
-                    {
-                        ProbeMonster(memory, resolver, address, lines);
-                    }
+                    if (!valid)
+                        continue;
+
+                    accepted++;
+                    ProbeMonster(memory, resolver, address, lines);
                 }
-                catch (Exception exception)
+                catch (Exception exception) when (exception is InvalidDataException or System.ComponentModel.Win32Exception or OverflowException or KeyNotFoundException)
                 {
-                    lines.Add($"Entry 0x{address:X}: ERROR {exception.GetType().Name}: {exception.Message}");
+                    pointerPathErrors++;
                 }
             }
 
-            lines.Add($"Inspected={inspected} Accepted={accepted}");
+            lines.Add($"Inspected={inspected} Accepted={accepted} InvalidEntryPointers={invalidEntryPointers} PointerPathErrors={pointerPathErrors} WrongMagic={wrongMagic} Disabled={disabled} WrongCategory={wrongCategory} InvalidIds={invalidIds}");
         }
         catch (Exception exception)
         {
