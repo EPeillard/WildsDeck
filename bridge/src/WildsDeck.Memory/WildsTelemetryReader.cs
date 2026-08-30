@@ -278,21 +278,49 @@ public sealed class WildsTelemetryReader
         int breaks = _memory.Read<int>(breakAddress + 0x18);
         bool severable = _memory.Read<byte>(breakAddress + 0x31) != 0;
         bool enabled = _memory.Read<byte>(breakAddress + 0x32) != 0;
+        bool breakable = enabled && !severable;
         int normalized = Math.Max(0, multiplier - 1 - resetCount);
-        float maximum = severable ? rawMax * multiplier * maxBreaks : rawMax * multiplier;
-        float current = !severable && breaks >= maxBreaks ? maximum : rawMax * normalized + rawCurrent;
+
+        float current;
+        float maximum;
+        string type;
+        if (severable)
+        {
+            type = "severable";
+            maximum = rawMax * multiplier * maxBreaks;
+            current = rawMax * normalized + rawCurrent;
+        }
+        else if (breakable)
+        {
+            type = "breakable";
+            maximum = rawMax * multiplier;
+            current = breaks >= maxBreaks && maxBreaks > 0
+                ? maximum
+                : rawMax * normalized + rawCurrent;
+        }
+        else
+        {
+            // HunterPie exposes raw flinch health for non-breakable parts. The
+            // break-association fields are not meaningful here and are often zero.
+            type = "flinch";
+            maximum = rawMax;
+            current = rawCurrent;
+        }
 
         return new MonsterPartState
         {
             Id = index.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Name = $"Part {index + 1}",
-            // Part health exists independently from whether the part can break/sever.
-            // HunterPie always updates Health/MaxHealth and uses IsEnabled only for
-            // breakability metadata.
+            Type = type,
             Current = ValidFloat(current),
             Max = ValidFloat(maximum),
-            Broken = enabled ? breaks >= maxBreaks && maxBreaks > 0 : null,
-            Severable = enabled ? severable : null
+            Breakable = breakable,
+            Severable = severable,
+            Broken = breakable ? breaks >= maxBreaks && maxBreaks > 0 : null,
+            BreakCount = breakable ? breaks : resetCount,
+            MaxBreaks = enabled && maxBreaks > 0 ? maxBreaks : null,
+            ResetCount = resetCount,
+            BreakMultiplier = enabled && multiplier > 0 ? multiplier : null
         };
     }
 
