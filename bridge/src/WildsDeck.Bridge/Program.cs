@@ -39,6 +39,9 @@ builder.Services.AddSingleton<ITelemetrySource>(services => options.MockMode == 
 builder.Services.AddHostedService<StatePump>();
 
 WebApplication app = builder.Build();
+TelemetryHub telemetryHub = app.Services.GetRequiredService<TelemetryHub>();
+app.Lifetime.ApplicationStopping.Register(telemetryHub.AbortAll);
+
 app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(30) });
 app.MapGet("/health", (TelemetryHub hub) => Results.Ok(new { status = "ok", clients = hub.ClientCount }));
 app.Map("/ws", async context =>
