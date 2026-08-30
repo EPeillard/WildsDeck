@@ -1,4 +1,5 @@
 import type { ActivityState, AilmentState, ConnectionSnapshot, MaterialCollectorState, MonsterPartState, WildsState } from "../telemetry.js";
+import { wildsPartName } from "./wilds-part-names.js";
 
 export type DisplayStyle = "percentage" | "gauge" | "status" | "number" | "text" | "compact";
 export type Tone = "neutral" | "good" | "warning" | "danger" | "inactive" | "error";
@@ -115,11 +116,12 @@ function relevantPart(settings: MetricSettings, label: string, state: WildsState
       return (a.percent ?? 101) - (b.percent ?? 101);
     });
   const selected = ranked[rank];
-  return selected ? dynamicPart(settings, label, selected) : unknown(settings, label);
+  return selected ? dynamicPart(settings, label, selected, state.monster?.id) : unknown(settings, label);
 }
 
-function dynamicPart(settings: MetricSettings, label: string, value: MonsterPartState): MetricView {
-  const name = value.name?.trim() || `PART ${Number(value.id) + 1}`;
+function dynamicPart(settings: MetricSettings, label: string, value: MonsterPartState, monsterId?: number): MetricView {
+  const partIndex = Number.parseInt(value.id, 10);
+  const name = wildsPartName(monsterId, partIndex) ?? value.name?.trim() ?? `PART ${partIndex + 1}`;
   const kind = value.severable ? "SEVERABLE" : value.breakable ? "BREAKABLE" : "FLINCH";
   const stages = Number.isFinite(value.breakCount) && Number.isFinite(value.maxBreaks) && (value.maxBreaks ?? 0) > 0
     ? `${value.breakCount}/${value.maxBreaks}`
@@ -134,7 +136,7 @@ function legacyPart(settings: MetricSettings, label: string, state: WildsState, 
   const parts = state.monster?.parts ?? [];
   const found = parts.find((item) => names.some((name) => item.name?.toLowerCase().includes(name))) ?? parts[fallback];
   if (!found) return unknown(settings, label);
-  return dynamicPart(settings, label, found);
+  return dynamicPart(settings, label, found, state.monster?.id);
 }
 
 function relevantAilment(settings: MetricSettings, label: string, state: WildsState, rank: number): MetricView {
