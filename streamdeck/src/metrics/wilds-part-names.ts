@@ -15,5 +15,12 @@ const partNames: Record<number, readonly string[]> = {
 
 export function wildsPartName(monsterId: number | undefined, partIndex: number): string | undefined {
   if (!Number.isInteger(monsterId) || !Number.isInteger(partIndex) || partIndex < 0) return undefined;
-  return partNames[monsterId!]?.[partIndex];
+  const names = partNames[monsterId!];
+  const base = names?.[partIndex];
+  if (!base) return undefined;
+
+  const total = names.filter((name) => name === base).length;
+  if (total <= 1) return base;
+  const occurrence = names.slice(0, partIndex + 1).filter((name) => name === base).length;
+  return `${base} ${occurrence}`;
 }
