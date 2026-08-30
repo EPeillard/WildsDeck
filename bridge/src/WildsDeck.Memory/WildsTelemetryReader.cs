@@ -286,8 +286,11 @@ public sealed class WildsTelemetryReader
         {
             Id = index.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Name = $"Part {index + 1}",
-            Current = enabled ? ValidFloat(current) : null,
-            Max = enabled ? ValidFloat(maximum) : null,
+            // Part health exists independently from whether the part can break/sever.
+            // HunterPie always updates Health/MaxHealth and uses IsEnabled only for
+            // breakability metadata.
+            Current = ValidFloat(current),
+            Max = ValidFloat(maximum),
             Broken = enabled ? breaks >= maxBreaks && maxBreaks > 0 : null,
             Severable = enabled ? severable : null
         };
