@@ -94,9 +94,18 @@ public sealed record MonsterPartState
     public required string Id { get; init; }
     public string? Name { get; init; }
     public string? Type { get; init; }
+
+    // Compatibility gauge: break/sever when available, otherwise flinch.
     public float? Current { get; init; }
     public float? Max { get; init; }
     public float? Percent => TelemetryMath.Percentage(Current, Max);
+
+    // HunterPie exposes these independently. Every part has a flinch gauge; a
+    // breakable or severable part additionally has the corresponding special gauge.
+    public GaugeState? Flinch { get; init; }
+    public GaugeState? Break { get; init; }
+    public GaugeState? Sever { get; init; }
+
     public bool? Breakable { get; init; }
     public bool? Severable { get; init; }
     public bool? Broken { get; init; }
