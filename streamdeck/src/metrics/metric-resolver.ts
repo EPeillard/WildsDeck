@@ -120,7 +120,18 @@ function relevantAilment(settings: MetricSettings, label: string, state: WildsSt
     });
   const selected = ranked[rank];
   if (!selected) return view(settings, label, "NONE", "status", "inactive");
-  return ailment(settings, label, selected);
+  return prominentAilment(settings, label, selected);
+}
+
+function prominentAilment(settings: MetricSettings, label: string, value: AilmentState): MetricView {
+  const name = value.name?.trim() || `AILMENT ${value.id}`;
+  if (value.active)
+    return view(settings, label, name, "status", "danger", "ACTIVE", value.percent);
+
+  if (!Number.isFinite(value.percent))
+    return view(settings, label, name, "status", "warning", "buildup");
+
+  return view(settings, label, name, "gauge", "warning", formatPercent(value.percent), value.percent);
 }
 
 function ailment(settings: MetricSettings, label: string, value?: AilmentState): MetricView {
