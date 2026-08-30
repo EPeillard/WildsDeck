@@ -1,0 +1,24 @@
+{
+  "name": "WildsDeck - Hunt",
+  "deviceModel": "20GAA9901",
+  "columns": 5,
+  "rows": 3,
+  "keys": [
+    { "x": 0, "y": 0, "metric": "monster.name", "label": "MONSTER" },
+    { "x": 1, "y": 0, "metric": "monster.hp", "label": "HP" },
+    { "x": 2, "y": 0, "metric": "monster.enrage", "label": "RAGE" },
+    { "x": 3, "y": 0, "metric": "monster.stamina", "label": "STAMINA" },
+    { "x": 4, "y": 0, "metric": "monster.capture", "label": "CAPTURE" },
+    { "x": 0, "y": 1, "metric": "monster.part.head", "label": "HEAD" },
+    { "x": 1, "y": 1, "metric": "monster.part.body", "label": "BODY" },
+    { "x": 2, "y": 1, "metric": "monster.part.tail", "label": "TAIL" },
+    { "x": 3, "y": 1, "metric": "monster.ailment.0", "label": "STATUS 1" },
+    { "x": 4, "y": 1, "metric": "monster.ailment.1", "label": "STATUS 2" },
+    { "x": 0, "y": 2, "metric": "player.damage", "label": "DAMAGE" },
+    { "x": 1, "y": 2, "metric": "player.partyShare", "label": "SHARE %" },
+    { "x": 2, "y": 2, "metric": "party.summary", "label": "PARTY" },
+    { "x": 3, "y": 2, "metric": "player.attack", "label": "ATTACK" },
+    { "x": 4, "y": 2, "metric": "player.affinity", "label": "AFFINITY" }
+  ]
+}
+

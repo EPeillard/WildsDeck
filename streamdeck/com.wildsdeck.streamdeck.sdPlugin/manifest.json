@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "WildsDeck",
+  "Version": "0.1.0.0",
+  "Author": "Etienne Peillard",
+  "Description": "Monster Hunter Wilds telemetry on a 5x3 Stream Deck.",
+  "Category": "WildsDeck",
+  "CategoryIcon": "imgs/plugin/category-icon",
+  "Icon": "imgs/plugin/plugin-icon",
+  "CodePath": "bin/plugin.js",
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "24",
+    "Debug": "enabled"
+  },
+  "UUID": "com.wildsdeck.streamdeck",
+  "Actions": [
+    {
+      "Name": "Wilds Display",
+      "UUID": "com.wildsdeck.streamdeck.metric",
+      "Icon": "imgs/actions/metric",
+      "Tooltip": "Display a WildsDeck telemetry metric",
+      "PropertyInspectorPath": "ui/metric.html",
+      "Controllers": ["Keypad"],
+      "DisableCaching": true,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/actions/metric-key",
+          "ShowTitle": false,
+          "TitleAlignment": "middle"
+        }
+      ]
+    }
+  ],
+  "Profiles": [
+    {
+      "Name": "WildsDeck - Town",
+      "DeviceType": 0,
+      "Readonly": false,
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": true
+    },
+    {
+      "Name": "WildsDeck - Hunt",
+      "DeviceType": 0,
+      "Readonly": false,
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": true
+    }
+  ]
+}
+

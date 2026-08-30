@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WildsDeck.Bridge/WildsDeck.Bridge.csproj" />
+    <Project Path="src/WildsDeck.Core/WildsDeck.Core.csproj" />
+    <Project Path="src/WildsDeck.Memory/WildsDeck.Memory.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WildsDeck.Tests/WildsDeck.Tests.csproj" />
+  </Folder>
+</Solution>
+

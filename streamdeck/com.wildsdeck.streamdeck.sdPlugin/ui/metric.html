@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wilds Display settings</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; padding: 14px; color: #f4f4f5; background: #2d2d2d; font-size: 13px; }
+    label { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 10px; margin: 10px 0; }
+    select, input { min-width: 0; padding: 6px 8px; color: inherit; background: #3d3d3d; border: 1px solid #606060; border-radius: 4px; }
+    select:focus, input:focus { outline: 2px solid #68a8ff; outline-offset: 1px; }
+    small { display: block; margin-top: 14px; color: #b6b6b6; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <label>Metric
+    <select id="metric">
+      <optgroup label="Monster">
+        <option value="monster.name">Monster name</option>
+        <option value="monster.hp">Health</option>
+        <option value="monster.enrage">Enrage</option>
+        <option value="monster.stamina">Stamina</option>
+        <option value="monster.capture">Capture readiness</option>
+        <option value="monster.part.head">Head part</option>
+        <option value="monster.part.body">Body part</option>
+        <option value="monster.part.tail">Tail part</option>
+        <option value="monster.ailment.0">Ailment 1</option>
+        <option value="monster.ailment.1">Ailment 2</option>
+      </optgroup>
+      <optgroup label="Player and party">
+        <option value="player.name">Player name</option>
+        <option value="player.weapon">Weapon</option>
+        <option value="player.damage">Damage</option>
+        <option value="player.partyShare">Party share</option>
+        <option value="player.attack">Attack</option>
+        <option value="player.affinity">Affinity</option>
+        <option value="party.summary">Party summary</option>
+      </optgroup>
+      <optgroup label="Town">
+        <option value="town.supportShip">Support Ship</option>
+        <option value="town.ingredientsCenter">Ingredients Center</option>
+        <option value="town.materialRetrieval">Material Retrieval</option>
+        <option value="town.npcNotification">NPC alert</option>
+        <option value="town.hunterRank">Hunter Rank</option>
+        <option value="town.npc.0">NPC 1</option>
+        <option value="town.npc.1">NPC 2</option>
+        <option value="town.npc.2">NPC 3</option>
+      </optgroup>
+      <option value="system.status">Connection / mode status</option>
+    </select>
+  </label>
+  <label>Display
+    <select id="displayStyle">
+      <option value="">Automatic</option>
+      <option value="percentage">Percentage</option>
+      <option value="gauge">Gauge</option>
+      <option value="status">Status</option>
+      <option value="number">Number</option>
+      <option value="text">Text</option>
+      <option value="compact">Compact</option>
+    </select>
+  </label>
+  <label>Custom label <input id="label" maxlength="20" placeholder="Automatic"></label>
+  <small>Unknown values are shown as unavailable. WildsDeck never substitutes fake data outside bridge mock mode.</small>
+  <script>
+    let socket;
+    let context;
+    const controls = ["metric", "displayStyle", "label"].map((id) => document.getElementById(id));
+
+    function apply(settings) {
+      document.getElementById("metric").value = settings.metric || "system.status";
+      document.getElementById("displayStyle").value = settings.displayStyle || "";
+      document.getElementById("label").value = settings.label || "";
+    }
+
+    function save() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      const settings = {
+        metric: document.getElementById("metric").value,
+        displayStyle: document.getElementById("displayStyle").value || undefined,
+        label: document.getElementById("label").value.trim() || undefined
+      };
+      socket.send(JSON.stringify({ event: "setSettings", context, payload: settings }));
+    }
+
+    controls.forEach((control) => control.addEventListener("change", save));
+    document.getElementById("label").addEventListener("input", save);
+
+    window.connectElgatoStreamDeckSocket = (port, uuid, event, info, actionInfo) => {
+      context = uuid;
+      const action = JSON.parse(actionInfo);
+      apply(action.payload.settings || {});
+      socket = new WebSocket(`ws://127.0.0.1:${port}`);
+      socket.addEventListener("open", () => socket.send(JSON.stringify({ event, uuid })));
+      socket.addEventListener("message", ({ data }) => {
+        const message = JSON.parse(data);
+        if (message.event === "didReceiveSettings") apply(message.payload.settings || {});
+      });
+    };
+  </script>
+</body>
+</html>
+

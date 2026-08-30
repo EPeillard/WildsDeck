@@ -1,0 +1,7 @@
+{
+  "processName": "MonsterHunterWilds",
+  "pollIntervalMs": 150,
+  "modeDebounceMs": 1000,
+  "webSocketPort": 47653,
+  "mapDirectory": "maps"
+}

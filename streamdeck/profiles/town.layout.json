@@ -1,0 +1,24 @@
+{
+  "name": "WildsDeck - Town",
+  "deviceModel": "20GAA9901",
+  "columns": 5,
+  "rows": 3,
+  "keys": [
+    { "x": 0, "y": 0, "metric": "town.supportShip", "label": "SHIP" },
+    { "x": 1, "y": 0, "metric": "town.ingredientsCenter", "label": "FOOD / ING" },
+    { "x": 2, "y": 0, "metric": "town.materialRetrieval", "label": "MATERIAL" },
+    { "x": 3, "y": 0, "metric": "town.npcNotification", "label": "NPC ALERT" },
+    { "x": 4, "y": 0, "metric": "town.hunterRank", "label": "HR" },
+    { "x": 0, "y": 1, "metric": "town.npc.0", "label": "NPC 1" },
+    { "x": 1, "y": 1, "metric": "town.npc.1", "label": "NPC 2" },
+    { "x": 2, "y": 1, "metric": "town.npc.2", "label": "NPC 3" },
+    { "x": 3, "y": 1, "metric": "player.name", "label": "PLAYER" },
+    { "x": 4, "y": 1, "metric": "player.weapon", "label": "WEAPON" },
+    { "x": 0, "y": 2, "metric": "player.attack", "label": "ATTACK" },
+    { "x": 1, "y": 2, "metric": "player.affinity", "label": "AFFINITY" },
+    { "x": 2, "y": 2, "metric": "system.status", "label": "MODE" },
+    { "x": 3, "y": 2, "metric": "system.status", "label": "BRIDGE" },
+    { "x": 4, "y": 2, "metric": "system.status", "label": "WILDSDECK" }
+  ]
+}
+

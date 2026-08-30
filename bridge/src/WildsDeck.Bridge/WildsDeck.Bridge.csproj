@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>WildsDeck.Bridge</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../WildsDeck.Core/WildsDeck.Core.csproj" />
+    <ProjectReference Include="../WildsDeck.Memory/WildsDeck.Memory.csproj" />
+  </ItemGroup>
+</Project>
+
