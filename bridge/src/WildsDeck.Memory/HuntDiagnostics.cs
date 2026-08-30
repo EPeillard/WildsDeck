@@ -14,7 +14,6 @@ public static class HuntDiagnostics
             nint elements = memory.Read<nint>(monsterList);
             int rawCount = memory.Read<int>(monsterList + 0x8);
             int count = Math.Clamp(rawCount, 0, 700);
-
             lines.Add($"MonsterList=0x{monsterList:X} Elements=0x{elements:X} RawCount={rawCount} Count={count}");
 
             nint cameraTarget = 0;
@@ -36,65 +35,66 @@ public static class HuntDiagnostics
             }
 
             nint[] entries = memory.ReadArray<nint>(elements + 0x20, count);
-            int inspected = 0;
-            int accepted = 0;
-            int invalidEntryPointers = 0;
-            int pointerPathErrors = 0;
-            int wrongMagic = 0;
-            int disabled = 0;
-            int wrongCategory = 0;
-            int invalidIds = 0;
+            int inspected = 0, contextOk = 0, contextErrors = 0, targetMatches = 0;
+            int basicOk = 0, basicErrors = 0, plausibleBasic = 0;
+            int magicOk = 0, magicErrors = 0, magicMatches = 0;
 
             foreach (nint address in entries)
             {
                 if (inspected >= maximumEntries)
                     break;
                 inspected++;
-
                 if (!MemoryAddressResolver.IsValidPointer(address))
-                {
-                    invalidEntryPointers++;
                     continue;
-                }
 
-                try
+                nint? context = TryPath(resolver, address, "Monster::Context");
+                if (context is null) contextErrors++;
+                else
                 {
-                    nint magicRaw = resolver.ResolvePointerPath(address, "Monster::Magic");
-                    int magic = unchecked((int)magicRaw);
-                    if (magic != 0x6D0045)
+                    contextOk++;
+                    if (context.Value == cameraTarget)
                     {
-                        wrongMagic++;
-                        continue;
+                        targetMatches++;
+                        lines.Add($"TARGET CONTEXT MATCH entry=0x{address:X} context=0x{context.Value:X}");
                     }
-
-                    nint basic = resolver.ResolvePointerPath(address, "Monster::BasicData");
-                    byte enabled = memory.Read<byte>(basic + 0x10);
-                    int id = memory.Read<int>(basic + 0x48);
-                    int category = memory.Read<int>(basic + 0x54);
-
-                    if (enabled != 1) disabled++;
-                    if (category != 0) wrongCategory++;
-                    if (id < 0) invalidIds++;
-
-                    nint context = resolver.ResolvePointerPath(address, "Monster::Context");
-                    bool target = context == cameraTarget;
-                    bool valid = enabled == 1 && category == 0 && id >= 0;
-
-                    lines.Add($"MAGIC MATCH 0x{address:X}: magicRaw=0x{magicRaw:X} enabled={enabled} id={id} category={category} context=0x{context:X} target={target} VALID={valid}");
-
-                    if (!valid)
-                        continue;
-
-                    accepted++;
-                    ProbeMonster(memory, resolver, address, lines);
                 }
-                catch (Exception exception) when (exception is InvalidDataException or System.ComponentModel.Win32Exception or OverflowException or KeyNotFoundException)
+
+                nint? basic = TryPath(resolver, address, "Monster::BasicData");
+                if (basic is null) basicErrors++;
+                else
                 {
-                    pointerPathErrors++;
+                    basicOk++;
+                    try
+                    {
+                        byte enabled = memory.Read<byte>(basic.Value + 0x10);
+                        int id = memory.Read<int>(basic.Value + 0x48);
+                        int category = memory.Read<int>(basic.Value + 0x54);
+                        bool plausible = enabled == 1 && category == 0 && id >= 0 && id < 1000;
+                        if (plausible)
+                        {
+                            plausibleBasic++;
+                            lines.Add($"PLAUSIBLE BASIC entry=0x{address:X} basic=0x{basic.Value:X} enabled={enabled} id={id} category={category} context={(context is null ? "ERR" : $"0x{context.Value:X}")} target={context == cameraTarget}");
+                            ProbeMonster(memory, resolver, address, lines);
+                        }
+                    }
+                    catch { basicErrors++; }
+                }
+
+                nint? magicRaw = TryPath(resolver, address, "Monster::Magic");
+                if (magicRaw is null) magicErrors++;
+                else
+                {
+                    magicOk++;
+                    int magic = unchecked((int)magicRaw.Value);
+                    if (magic == 0x6D0045)
+                    {
+                        magicMatches++;
+                        lines.Add($"MAGIC MATCH entry=0x{address:X} raw=0x{magicRaw.Value:X}");
+                    }
                 }
             }
 
-            lines.Add($"Inspected={inspected} Accepted={accepted} InvalidEntryPointers={invalidEntryPointers} PointerPathErrors={pointerPathErrors} WrongMagic={wrongMagic} Disabled={disabled} WrongCategory={wrongCategory} InvalidIds={invalidIds}");
+            lines.Add($"Inspected={inspected} ContextOk={contextOk} ContextErrors={contextErrors} TargetMatches={targetMatches} BasicOk={basicOk} BasicErrors={basicErrors} PlausibleBasic={plausibleBasic} MagicOk={magicOk} MagicErrors={magicErrors} MagicMatches={magicMatches}");
         }
         catch (Exception exception)
         {
@@ -102,6 +102,12 @@ public static class HuntDiagnostics
         }
 
         return lines;
+    }
+
+    private static nint? TryPath(MemoryAddressResolver resolver, nint address, string symbol)
+    {
+        try { return resolver.ResolvePointerPath(address, symbol); }
+        catch (Exception exception) when (exception is InvalidDataException or System.ComponentModel.Win32Exception or OverflowException or KeyNotFoundException) { return null; }
     }
 
     private static void ProbeMonster(ProcessMemoryReader memory, MemoryAddressResolver resolver, nint monster, List<string> lines)
@@ -113,22 +119,12 @@ public static class HuntDiagnostics
             nint maximum = memory.Read<nint>(health + 0x18);
             lines.Add($"  Health=0x{health:X} currentPtr=0x{current:X} maxPtr=0x{maximum:X}");
         }
-        catch (Exception exception)
-        {
-            lines.Add($"  Health ERROR {exception.GetType().Name}: {exception.Message}");
-        }
+        catch (Exception exception) { lines.Add($"  Health ERROR {exception.GetType().Name}: {exception.Message}"); }
 
         foreach (string symbol in new[] { "Monster::Enrage", "Monster::Stamina", "Monster::Ailments", "Monster::Parts", "Monster::Thresholds" })
         {
-            try
-            {
-                nint value = resolver.ResolvePointerPath(monster, symbol);
-                lines.Add($"  {symbol}=0x{value:X}");
-            }
-            catch (Exception exception)
-            {
-                lines.Add($"  {symbol} ERROR {exception.GetType().Name}: {exception.Message}");
-            }
+            try { lines.Add($"  {symbol}=0x{resolver.ResolvePointerPath(monster, symbol):X}"); }
+            catch (Exception exception) { lines.Add($"  {symbol} ERROR {exception.GetType().Name}: {exception.Message}"); }
         }
     }
 }
