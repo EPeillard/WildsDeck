@@ -73,7 +73,7 @@ describe("metric resolver", () => {
     });
   });
 
-  it("ranks dynamic parts and disambiguates duplicate Blangonga heads", () => {
+  it("renders separate flinch and break/sever gauges with repeated-break counts", () => {
     const snapshot: ConnectionSnapshot = {
       bridgeConnected: true,
       state: {
@@ -83,9 +83,19 @@ describe("metric resolver", () => {
         monster: {
           id: 7,
           parts: [
-            { id: "0", name: "Part 1", type: "flinch", current: 60, max: 100, percent: 60 },
-            { id: "7", name: "Part 8", type: "breakable", breakable: true, current: 35, max: 100, percent: 35, breakCount: 0, maxBreaks: 2 },
-            { id: "8", name: "Part 9", type: "severable", severable: true, current: 45, max: 100, percent: 45, breakCount: 1, maxBreaks: 2 }
+            {
+              id: "7", name: "Part 8", type: "breakable", breakable: true,
+              current: 35, max: 100, percent: 35,
+              flinch: { current: 72, max: 100, percent: 72 },
+              break: { current: 35, max: 100, percent: 35 },
+              breakCount: 1, maxBreaks: 3
+            },
+            {
+              id: "8", name: "Part 9", type: "severable", severable: true,
+              current: 45, max: 100, percent: 45,
+              flinch: { current: 60, max: 100, percent: 60 },
+              sever: { current: 45, max: 100, percent: 45 }
+            }
           ]
         }
       }
@@ -94,15 +104,18 @@ describe("metric resolver", () => {
     expect(resolveMetric(snapshot, { metric: "monster.part.primary" })).toMatchObject({
       label: "PART 1",
       value: "Head 3",
-      detail: "45% · SEVERABLE · 1/2",
-      percent: 45,
-      tone: "danger"
+      detail: "F 60% · CUT 45%",
+      percent: 60,
+      secondaryPercent: 45,
+      secondaryTone: "danger"
     });
     expect(resolveMetric(snapshot, { metric: "monster.part.secondary" })).toMatchObject({
       label: "PART 2",
       value: "Head 2",
-      detail: "35% · BREAKABLE · 0/2",
-      percent: 35
+      detail: "F 72% · BREAK 35% · 1/3",
+      percent: 72,
+      secondaryPercent: 35,
+      secondaryTone: "warning"
     });
   });
 
