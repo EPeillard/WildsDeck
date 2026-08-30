@@ -117,9 +117,22 @@ public sealed record TownState
     public int? HunterRank { get; init; }
     public ActivityState? SupportShip { get; init; }
     public ActivityState? IngredientsCenter { get; init; }
+    public IReadOnlyList<MaterialCollectorState> MaterialCollectors { get; init; } = [];
+
+    // Kept for protocol/backward compatibility with older profiles. New Town profiles
+    // use MaterialCollectors instead of this aggregate value.
     public ActivityState? MaterialRetrieval { get; init; }
     public bool? NpcNotification { get; init; }
     public IReadOnlyList<NpcState> Npcs { get; init; } = [];
+}
+
+public sealed record MaterialCollectorState
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required int Current { get; init; }
+    public int Max { get; init; } = 16;
+    public float? Percent => TelemetryMath.Percentage(Current, Max);
 }
 
 public sealed record ActivityState
