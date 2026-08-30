@@ -13,6 +13,24 @@ public sealed class TelemetryHub(BridgeOptions options, ILogger<TelemetryHub> lo
 
     public int ClientCount => _clients.Count;
 
+    public void AbortAll()
+    {
+        foreach ((Guid id, WebSocket socket) in _clients)
+        {
+            try
+            {
+                socket.Abort();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            finally
+            {
+                _clients.TryRemove(id, out _);
+            }
+        }
+    }
+
     public async Task AcceptAsync(WebSocket socket, CancellationToken cancellationToken)
     {
         Guid id = Guid.NewGuid();
