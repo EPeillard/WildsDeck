@@ -95,10 +95,19 @@ export interface ActivityState {
   support?: "unsupported" | "experimental" | "supported";
 }
 
+export interface MaterialCollectorState {
+  id: string;
+  name: string;
+  current: number;
+  max: number;
+  percent?: number;
+}
+
 export interface TownState {
   hunterRank?: number;
   supportShip?: ActivityState;
   ingredientsCenter?: ActivityState;
+  materialCollectors?: MaterialCollectorState[];
   materialRetrieval?: ActivityState;
   npcNotification?: boolean;
   npcs?: { id?: string; name?: string; hasNotification?: boolean }[];
