@@ -1,4 +1,4 @@
-import type { ActivityState, AilmentState, ConnectionSnapshot, MonsterPartState, WildsState } from "../telemetry.js";
+import type { ActivityState, AilmentState, ConnectionSnapshot, MaterialCollectorState, MonsterPartState, WildsState } from "../telemetry.js";
 
 export type DisplayStyle = "percentage" | "gauge" | "status" | "number" | "text" | "compact";
 export type Tone = "neutral" | "good" | "warning" | "danger" | "inactive" | "error";
@@ -55,6 +55,11 @@ export function resolveMetric(snapshot: ConnectionSnapshot, settings: MetricSett
     case "player.attack": return number(settings, "ATTACK", state.player?.attack);
     case "player.affinity": return gauge(settings, "AFFINITY", state.player?.affinity, undefined, "good");
     case "party.summary": return view(settings, "PARTY", `${state.party?.length ?? 0} HUNTERS`, "compact", "neutral", compactNumber(sum(state.party?.map((member) => member.damage))));
+    case "town.material.rysher": return materialCollector(settings, "Rysher", state, "rysher");
+    case "town.material.murtabak": return materialCollector(settings, "Murtabak", state, "murtabak");
+    case "town.material.apar": return materialCollector(settings, "Apar", state, "apar");
+    case "town.material.plumpeach": return materialCollector(settings, "Plumpeach", state, "plumpeach");
+    case "town.material.sabar": return materialCollector(settings, "Sabar", state, "sabar");
     case "town.supportShip": return activity(settings, "SHIP", state.town?.supportShip);
     case "town.ingredientsCenter": return activity(settings, "FOOD / ING", state.town?.ingredientsCenter);
     case "town.materialRetrieval": return activity(settings, "MATERIAL", state.town?.materialRetrieval);
@@ -67,6 +72,23 @@ export function resolveMetric(snapshot: ConnectionSnapshot, settings: MetricSett
     case "town.npc.2": return npc(settings, "NPC 3", state, 2);
     default: return view(settings, "METRIC", "UNKNOWN", "status", "error", metric);
   }
+}
+
+function materialCollector(settings: MetricSettings, label: string, state: WildsState, id: string): MetricView {
+  const collector = state.town?.materialCollectors?.find((item) => item.id.toLowerCase() === id);
+  if (!collector) return unknown(settings, label);
+  return materialCollectorView(settings, collector);
+}
+
+function materialCollectorView(settings: MetricSettings, collector: MaterialCollectorState): MetricView {
+  if (!Number.isFinite(collector.current) || !Number.isFinite(collector.max) || collector.max <= 0)
+    return unknown(settings, collector.name);
+
+  const percent = Number.isFinite(collector.percent)
+    ? collector.percent
+    : Math.max(0, Math.min(100, collector.current / collector.max * 100));
+  const tone: Tone = collector.current >= collector.max ? "warning" : "good";
+  return view(settings, collector.name, `${collector.current}/${collector.max}`, "gauge", tone, undefined, percent);
 }
 
 function activity(settings: MetricSettings, label: string, value?: ActivityState): MetricView {
