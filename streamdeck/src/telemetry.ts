@@ -73,8 +73,14 @@ export interface MonsterState {
 export interface MonsterPartState extends GaugeState {
   id: string;
   name?: string;
-  broken?: boolean;
+  type?: "flinch" | "breakable" | "severable" | string;
+  breakable?: boolean;
   severable?: boolean;
+  broken?: boolean;
+  breakCount?: number;
+  maxBreaks?: number;
+  resetCount?: number;
+  breakMultiplier?: number;
 }
 
 export interface AilmentState extends GaugeState {
@@ -117,4 +123,3 @@ export interface ConnectionSnapshot {
   bridgeConnected: boolean;
   state?: WildsState;
 }
-
