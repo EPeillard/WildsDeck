@@ -35,7 +35,15 @@ public sealed class MockTelemetrySource(MockMode mode) : ITelemetrySource
             HunterRank = 123,
             SupportShip = new ActivityState { Available = true, Ready = true, Status = "In town", Support = SupportStatus.Supported },
             IngredientsCenter = new ActivityState { Available = true, Ready = false, Current = 7, Max = 10, Status = "7/10", Support = SupportStatus.Supported },
-            MaterialRetrieval = new ActivityState { Available = true, Ready = true, Current = 48, Max = 48, Status = "48/48", Support = SupportStatus.Experimental },
+            MaterialCollectors =
+            [
+                new MaterialCollectorState { Id = "rysher", Name = "Rysher", Current = 6 },
+                new MaterialCollectorState { Id = "murtabak", Name = "Murtabak", Current = 6 },
+                new MaterialCollectorState { Id = "apar", Name = "Apar", Current = 6 },
+                new MaterialCollectorState { Id = "plumpeach", Name = "Plumpeach", Current = 6 },
+                new MaterialCollectorState { Id = "sabar", Name = "Sabar", Current = 6 }
+            ],
+            MaterialRetrieval = new ActivityState { Available = true, Ready = false, Current = 30, Max = 80, Status = "30/80", Support = SupportStatus.Experimental },
             NpcNotification = true,
             Npcs =
             [
@@ -185,4 +193,3 @@ public sealed class RealTelemetrySource(BridgeOptions options, ILogger<RealTelem
 
     public void Dispose() => Detach();
 }
-
