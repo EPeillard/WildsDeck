@@ -1,4 +1,4 @@
-import { action, type DidReceiveSettingsEvent, SingletonAction, type WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type DidReceiveSettingsEvent, SingletonAction, type WillAppearEvent } from "@elgato/streamdeck";
 import type { BridgeClient } from "../bridge/bridge-client.js";
 import { resolveMetric, type MetricSettings } from "../metrics/metric-resolver.js";
 import { renderMetric } from "../rendering/svg-renderer.js";
@@ -32,7 +32,14 @@ export class WildsDisplayAction extends SingletonAction<MetricSettings> {
     settings: MetricSettings
   ): Promise<void> {
     const view = resolveMetric(this.#bridge.snapshot, settings);
-    await target.setImage(renderMetric(view));
+    const svg = renderMetric(view);
+    const image = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+
+    try {
+      await target.setImage(image);
+    } catch (error: unknown) {
+      streamDeck.logger.error(`Failed to render metric ${settings.metric ?? "system.status"}: ${String(error)}`);
+      throw error;
+    }
   }
 }
-
