@@ -15,25 +15,22 @@ for (const layoutName of layouts) {
   validateLayout(layout);
   const rootId = stableUuid(`${layout.name}:root`).toUpperCase();
   const pageId = stableUuid(`${layout.name}:page`);
-  const defaultPageId = stableUuid(`${layout.name}:default`);
-  const contentId = stableToken(`${layout.name}:content`);
-  const emptyId = stableToken(`${layout.name}:empty`);
+  const pageFolderId = profileFolderId(pageId);
   const root = `${rootId}.sdProfile`;
 
+  // Keep the bundled archive device-agnostic. The plugin manifest's DeviceType=0
+  // already limits these profiles to standard 5x3 Stream Deck devices.
   const profileManifest = {
-    Device: { Model: layout.deviceModel, UUID: "" },
     Name: layout.name,
-    Pages: { Current: pageId, Default: defaultPageId, Pages: [pageId] },
+    Pages: { Current: pageId, Pages: [pageId] },
     Version: "2.0"
   };
   const actions = Object.fromEntries(layout.keys.map((key) => [`${key.x},${key.y}`, profileAction(layout.name, key)]));
   const pageManifest = { Controllers: [{ Actions: actions, Type: "Keypad" }], Icon: "", Name: "" };
-  const emptyManifest = { Controllers: [{ Actions: {}, Type: "Keypad" }], Icon: "", Name: "" };
 
   const files = [
     [`${root}/manifest.json`, JSON.stringify(profileManifest)],
-    [`${root}/Profiles/${contentId}/manifest.json`, JSON.stringify(pageManifest)],
-    [`${root}/Profiles/${emptyId}/manifest.json`, JSON.stringify(emptyManifest)]
+    [`${root}/Profiles/${pageFolderId}/manifest.json`, JSON.stringify(pageManifest)]
   ];
   const destination = path.join(pluginDirectory, `${layout.name}.streamDeckProfile`);
   await writeFile(destination, zip(files));
@@ -80,8 +77,14 @@ function stableUuid(input) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function stableToken(input) {
-  return `${createHash("sha1").update(input).digest("hex").slice(0, 26).toUpperCase()}Z`;
+function profileFolderId(uuid) {
+  return ((uuid.replaceAll("-", "") + "000").match(/.{5}/g) ?? [])
+    .map((group) => Number.parseInt(group, 16).toString(32).padStart(4, "0"))
+    .join("")
+    .slice(0, 26)
+    .toUpperCase()
+    .replaceAll("V", "W")
+    .replaceAll("U", "V") + "Z";
 }
 
 function zip(files) {
