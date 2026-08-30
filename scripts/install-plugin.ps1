@@ -14,6 +14,7 @@ if (-not $SkipBuild) {
 
 Push-Location $PluginRoot
 try {
+    npm run profiles
     npx streamdeck dev
     npx streamdeck link $PluginBundle
     npx streamdeck restart com.wildsdeck.streamdeck
@@ -22,4 +23,3 @@ try {
 }
 
 Write-Host "WildsDeck is linked to Stream Deck. The Town and Hunt profiles are bundled and auto-installable."
-
