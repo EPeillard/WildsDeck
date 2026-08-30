@@ -363,7 +363,7 @@ public sealed class WildsTelemetryReader
             HunterRank = rank,
             SupportShip = Try(() => ReadSupportShip(saveAddress)),
             IngredientsCenter = Try(() => ReadIngredientsCenter(saveAddress)),
-            MaterialRetrieval = Try(() => ReadMaterialRetrieval(saveAddress)),
+            MaterialCollectors = Try(() => ReadMaterialCollectors(saveAddress)) ?? [],
             NpcNotification = null,
             Npcs = []
         };
@@ -412,35 +412,48 @@ public sealed class WildsTelemetryReader
         };
     }
 
-    private ActivityState ReadMaterialRetrieval(nint save)
+    private IReadOnlyList<MaterialCollectorState> ReadMaterialCollectors(nint save)
     {
         nint sources = _resolver.ResolvePointerPath(save, "Activities::MaterialRetrieval");
-        int total = 0;
-        int collectors = 0;
-        bool ready = false;
+        var collectors = new List<(int Order, MaterialCollectorState State)>();
+
         foreach (nint collector in ReadPointerArray(sources, 12))
         {
+            uint rawId = _memory.Read<uint>(collector + 0x2C);
+            (string Id, string Name, int Order)? definition = MaterialCollectorDefinition(rawId);
+            if (definition is null)
+                continue;
+
             nint items = _memory.Read<nint>(collector + 0x10);
-            int count = 0;
-            foreach (nint item in ReadPointerArray(items, MaterialCollectorCapacity))
+            int count = ReadPointerArray(items, MaterialCollectorCapacity)
+                .Count(item => _memory.Read<short>(item + 0x12) > 0);
+
+            collectors.Add((definition.Value.Order, new MaterialCollectorState
             {
-                if (_memory.Read<short>(item + 0x12) > 0)
-                    count++;
-            }
-            collectors++;
-            total += count;
-            ready |= count >= MaterialCollectorCapacity;
+                Id = definition.Value.Id,
+                Name = definition.Value.Name,
+                Current = Math.Clamp(count, 0, MaterialCollectorCapacity),
+                Max = MaterialCollectorCapacity
+            }));
         }
-        return new ActivityState
-        {
-            Available = collectors > 0,
-            Ready = collectors > 0 ? ready : null,
-            Current = total,
-            Max = collectors > 0 ? collectors * MaterialCollectorCapacity : null,
-            Status = collectors > 0 ? $"{total}/{collectors * MaterialCollectorCapacity}" : "Unavailable",
-            Support = SupportStatus.Experimental
-        };
+
+        return collectors
+            .GroupBy(static item => item.State.Id, StringComparer.OrdinalIgnoreCase)
+            .Select(static group => group.First())
+            .OrderBy(static item => item.Order)
+            .Select(static item => item.State)
+            .ToArray();
     }
+
+    private static (string Id, string Name, int Order)? MaterialCollectorDefinition(uint id) => id switch
+    {
+        0x8552AD80 => ("rysher", "Rysher", 0),
+        0x00000023 => ("murtabak", "Murtabak", 1),
+        0x251E0440 => ("apar", "Apar", 2),
+        0x3F8E9480 => ("plumpeach", "Plumpeach", 3),
+        0x5CE6D780 => ("sabar", "Sabar", 4),
+        _ => null
+    };
 
     private IEnumerable<nint> ReadPointerArray(nint address, int maximum)
     {
