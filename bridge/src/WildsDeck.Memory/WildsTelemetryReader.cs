@@ -121,7 +121,7 @@ public sealed class WildsTelemetryReader
     private MonsterCandidate? ReadMonsterCandidate(nint address, nint cameraTarget)
     {
         nint magic = _resolver.ResolvePointerPath(address, "Monster::Magic");
-        if ((long)magic is not 0x6D0045)
+        if (unchecked((int)magic) != 0x6D0045)
             return null;
 
         nint basic = _resolver.ResolvePointerPath(address, "Monster::BasicData");
