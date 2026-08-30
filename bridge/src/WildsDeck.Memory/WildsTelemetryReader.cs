@@ -281,30 +281,47 @@ public sealed class WildsTelemetryReader
         bool breakable = enabled && !severable;
         int normalized = Math.Max(0, multiplier - 1 - resetCount);
 
-        float current;
-        float maximum;
+        float specialCurrent;
+        float specialMaximum;
         string type;
+        GaugeState? breakGauge = null;
+        GaugeState? severGauge = null;
+
+        GaugeState flinchGauge = new()
+        {
+            Current = ValidFloat(rawCurrent),
+            Max = ValidFloat(rawMax)
+        };
+
         if (severable)
         {
             type = "severable";
-            maximum = rawMax * multiplier * maxBreaks;
-            current = rawMax * normalized + rawCurrent;
+            specialMaximum = rawMax * multiplier * maxBreaks;
+            specialCurrent = rawMax * normalized + rawCurrent;
+            severGauge = new GaugeState
+            {
+                Current = ValidFloat(specialCurrent),
+                Max = ValidFloat(specialMaximum)
+            };
         }
         else if (breakable)
         {
             type = "breakable";
-            maximum = rawMax * multiplier;
-            current = breaks >= maxBreaks && maxBreaks > 0
-                ? maximum
+            specialMaximum = rawMax * multiplier;
+            specialCurrent = breaks >= maxBreaks && maxBreaks > 0
+                ? specialMaximum
                 : rawMax * normalized + rawCurrent;
+            breakGauge = new GaugeState
+            {
+                Current = ValidFloat(specialCurrent),
+                Max = ValidFloat(specialMaximum)
+            };
         }
         else
         {
-            // HunterPie exposes raw flinch health for non-breakable parts. The
-            // break-association fields are not meaningful here and are often zero.
             type = "flinch";
-            maximum = rawMax;
-            current = rawCurrent;
+            specialMaximum = rawMax;
+            specialCurrent = rawCurrent;
         }
 
         return new MonsterPartState
@@ -312,8 +329,11 @@ public sealed class WildsTelemetryReader
             Id = index.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Name = $"Part {index + 1}",
             Type = type,
-            Current = ValidFloat(current),
-            Max = ValidFloat(maximum),
+            Current = ValidFloat(specialCurrent),
+            Max = ValidFloat(specialMaximum),
+            Flinch = flinchGauge,
+            Break = breakGauge,
+            Sever = severGauge,
             Breakable = breakable,
             Severable = severable,
             Broken = breakable ? breaks >= maxBreaks && maxBreaks > 0 : null,
