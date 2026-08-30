@@ -43,9 +43,12 @@ export function resolveMetric(snapshot: ConnectionSnapshot, settings: MetricSett
     case "monster.capture": return state.monster?.captureReady === undefined
       ? unknown(settings, "CAPTURE")
       : view(settings, "CAPTURE", state.monster.captureReady ? "READY ✓" : "NOT YET", "status", state.monster.captureReady ? "good" : "neutral", formatPercent(state.monster?.health?.percent));
-    case "monster.part.head": return part(settings, "HEAD", state, ["head"], 0);
-    case "monster.part.body": return part(settings, "BODY", state, ["body", "torso"], 1);
-    case "monster.part.tail": return part(settings, "TAIL", state, ["tail"], 2);
+    case "monster.part.primary": return relevantPart(settings, "PART 1", state, 0);
+    case "monster.part.secondary": return relevantPart(settings, "PART 2", state, 1);
+    case "monster.part.tertiary": return relevantPart(settings, "PART 3", state, 2);
+    case "monster.part.head": return legacyPart(settings, "HEAD", state, ["head"], 0);
+    case "monster.part.body": return legacyPart(settings, "BODY", state, ["body", "torso"], 1);
+    case "monster.part.tail": return legacyPart(settings, "TAIL", state, ["tail"], 2);
     case "monster.ailment.primary": return relevantAilment(settings, "AILMENT", state, 0);
     case "monster.ailment.secondary": return relevantAilment(settings, "NEXT", state, 1);
     case "monster.ailment.0": return ailment(settings, "STATUS 1", state.monster?.ailments?.[0]);
@@ -99,16 +102,39 @@ function activity(settings: MetricSettings, label: string, value?: ActivityState
   return text(settings, label, value.status);
 }
 
-function part(settings: MetricSettings, label: string, state: WildsState, names: string[], fallback: number): MetricView {
+function relevantPart(settings: MetricSettings, label: string, state: WildsState, rank: number): MetricView {
+  const ranked = [...(state.monster?.parts ?? [])]
+    .filter((item) => Number.isFinite(item.percent))
+    .sort((a, b) => {
+      const brokenA = a.broken ? 1 : 0;
+      const brokenB = b.broken ? 1 : 0;
+      if (brokenA !== brokenB) return brokenA - brokenB;
+      const priority = (part: MonsterPartState) => part.severable ? 0 : part.breakable ? 1 : 2;
+      const byType = priority(a) - priority(b);
+      if (byType !== 0) return byType;
+      return (a.percent ?? 101) - (b.percent ?? 101);
+    });
+  const selected = ranked[rank];
+  return selected ? dynamicPart(settings, label, selected) : unknown(settings, label);
+}
+
+function dynamicPart(settings: MetricSettings, label: string, value: MonsterPartState): MetricView {
+  const name = value.name?.trim() || `PART ${Number(value.id) + 1}`;
+  const kind = value.severable ? "SEVERABLE" : value.breakable ? "BREAKABLE" : "FLINCH";
+  const stages = Number.isFinite(value.breakCount) && Number.isFinite(value.maxBreaks) && (value.maxBreaks ?? 0) > 0
+    ? `${value.breakCount}/${value.maxBreaks}`
+    : undefined;
+  const detail = stages ? `${kind} · ${stages}` : kind;
+  if (value.broken) return view(settings, label, name, "status", "good", `BROKEN · ${detail}`);
+  if (!Number.isFinite(value.percent)) return view(settings, label, name, "status", "inactive", detail);
+  return view(settings, label, name, "gauge", value.severable ? "danger" : "warning", `${formatPercent(value.percent)} · ${detail}`, value.percent);
+}
+
+function legacyPart(settings: MetricSettings, label: string, state: WildsState, names: string[], fallback: number): MetricView {
   const parts = state.monster?.parts ?? [];
   const found = parts.find((item) => names.some((name) => item.name?.toLowerCase().includes(name))) ?? parts[fallback];
   if (!found) return unknown(settings, label);
-  return partGauge(settings, label, found);
-}
-
-function partGauge(settings: MetricSettings, label: string, value: MonsterPartState): MetricView {
-  if (value.broken) return view(settings, label, "BROKEN", "status", "good", value.name);
-  return gauge(settings, label, value.percent, value.name, "warning");
+  return dynamicPart(settings, label, found);
 }
 
 function relevantAilment(settings: MetricSettings, label: string, state: WildsState, rank: number): MetricView {
