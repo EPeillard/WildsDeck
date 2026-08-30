@@ -74,6 +74,9 @@ export interface MonsterPartState extends GaugeState {
   id: string;
   name?: string;
   type?: "flinch" | "breakable" | "severable" | string;
+  flinch?: GaugeState;
+  break?: GaugeState;
+  sever?: GaugeState;
   breakable?: boolean;
   severable?: boolean;
   broken?: boolean;
