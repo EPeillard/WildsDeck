@@ -16,7 +16,8 @@ public sealed class StatePump(
         while (!stoppingToken.IsCancellationRequested)
         {
             WildsState raw = source.Poll();
-            bool changed = raw.Connected && _debouncer.Observe(raw.Mode, raw.Timestamp, out GameMode previous);
+            GameMode previous = _debouncer.Current;
+            bool changed = raw.Connected && _debouncer.Observe(raw.Mode, raw.Timestamp, out previous);
             GameMode publishedMode = raw.Connected ? _debouncer.Current : GameMode.Unknown;
             WildsState state = raw with { Mode = publishedMode };
 
@@ -39,4 +40,3 @@ public sealed class StatePump(
         base.Dispose();
     }
 }
-
