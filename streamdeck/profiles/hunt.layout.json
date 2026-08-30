@@ -12,8 +12,8 @@
     { "x": 0, "y": 1, "metric": "monster.part.head", "label": "HEAD" },
     { "x": 1, "y": 1, "metric": "monster.part.body", "label": "BODY" },
     { "x": 2, "y": 1, "metric": "monster.part.tail", "label": "TAIL" },
-    { "x": 3, "y": 1, "metric": "monster.ailment.0", "label": "STATUS 1" },
-    { "x": 4, "y": 1, "metric": "monster.ailment.1", "label": "STATUS 2" },
+    { "x": 3, "y": 1, "metric": "monster.ailment.primary", "label": "AILMENT" },
+    { "x": 4, "y": 1, "metric": "monster.ailment.secondary", "label": "NEXT" },
     { "x": 0, "y": 2, "metric": "player.damage", "label": "DAMAGE" },
     { "x": 1, "y": 2, "metric": "player.partyShare", "label": "SHARE %" },
     { "x": 2, "y": 2, "metric": "party.summary", "label": "PARTY" },
@@ -21,4 +21,3 @@
     { "x": 4, "y": 2, "metric": "player.affinity", "label": "AFFINITY" }
   ]
 }
-
