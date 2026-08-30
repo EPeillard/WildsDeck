@@ -24,6 +24,29 @@ describe("metric resolver", () => {
     expect(resolveMetric(snapshot, { metric: "monster.hp" })).toMatchObject({ value: "62%", percent: 62, style: "gauge" });
   });
 
+  it("renders a named material collector as slots used out of 16", () => {
+    const snapshot: ConnectionSnapshot = {
+      bridgeConnected: true,
+      state: {
+        connected: true,
+        mode: "town",
+        timestamp: new Date().toISOString(),
+        town: {
+          materialCollectors: [
+            { id: "rysher", name: "Rysher", current: 6, max: 16, percent: 37.5 }
+          ]
+        }
+      }
+    };
+    expect(resolveMetric(snapshot, { metric: "town.material.rysher" })).toMatchObject({
+      label: "Rysher",
+      value: "6/16",
+      percent: 37.5,
+      style: "gauge",
+      tone: "good"
+    });
+  });
+
   it("does not turn an unknown capture state into false", () => {
     const snapshot: ConnectionSnapshot = {
       bridgeConnected: true,
@@ -53,4 +76,3 @@ describe("formatting", () => {
     expect(compactNumber(15_500)).toBe("15.5K");
   });
 });
-
