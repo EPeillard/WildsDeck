@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/TestResults/
+**/node_modules/
+streamdeck/coverage/
+streamdeck/com.wildsdeck.streamdeck.sdPlugin/logs/
+*.user
+*.suo
+*.nupkg
+*.streamDeckPlugin
+.vs/
+.idea/
+.DS_Store
+wildsdeck.local.json
