@@ -17,6 +17,8 @@ export interface MetricView {
   value: string;
   detail?: string;
   percent?: number;
+  secondaryPercent?: number;
+  secondaryTone?: Tone;
   style: DisplayStyle;
   tone: Tone;
 }
@@ -105,31 +107,57 @@ function activity(settings: MetricSettings, label: string, value?: ActivityState
 
 function relevantPart(settings: MetricSettings, label: string, state: WildsState, rank: number): MetricView {
   const ranked = [...(state.monster?.parts ?? [])]
-    .filter((item) => Number.isFinite(item.percent))
+    .filter((item) => Number.isFinite(partProgress(item)))
     .sort((a, b) => {
-      const brokenA = a.broken ? 1 : 0;
-      const brokenB = b.broken ? 1 : 0;
-      if (brokenA !== brokenB) return brokenA - brokenB;
+      const completedA = a.breakable && a.maxBreaks && (a.breakCount ?? 0) >= a.maxBreaks ? 1 : 0;
+      const completedB = b.breakable && b.maxBreaks && (b.breakCount ?? 0) >= b.maxBreaks ? 1 : 0;
+      if (completedA !== completedB) return completedA - completedB;
       const priority = (part: MonsterPartState) => part.severable ? 0 : part.breakable ? 1 : 2;
       const byType = priority(a) - priority(b);
       if (byType !== 0) return byType;
-      return (a.percent ?? 101) - (b.percent ?? 101);
+      return (partProgress(a) ?? 101) - (partProgress(b) ?? 101);
     });
   const selected = ranked[rank];
   return selected ? dynamicPart(settings, label, selected, state.monster?.id) : unknown(settings, label);
 }
 
+function partProgress(value: MonsterPartState): number | undefined {
+  const special = value.severable ? value.sever?.percent : value.breakable ? value.break?.percent : undefined;
+  return Number.isFinite(special) ? special : Number.isFinite(value.flinch?.percent) ? value.flinch?.percent : value.percent;
+}
+
 function dynamicPart(settings: MetricSettings, label: string, value: MonsterPartState, monsterId?: number): MetricView {
   const partIndex = Number.parseInt(value.id, 10);
   const name = wildsPartName(monsterId, partIndex) ?? value.name?.trim() ?? `PART ${partIndex + 1}`;
-  const kind = value.severable ? "SEVERABLE" : value.breakable ? "BREAKABLE" : "FLINCH";
-  const stages = Number.isFinite(value.breakCount) && Number.isFinite(value.maxBreaks) && (value.maxBreaks ?? 0) > 0
+  const flinchPercent = Number.isFinite(value.flinch?.percent) ? value.flinch!.percent : undefined;
+  const specialPercent = value.severable
+    ? value.sever?.percent
+    : value.breakable
+      ? value.break?.percent
+      : undefined;
+  const specialName = value.severable ? "CUT" : value.breakable ? "BREAK" : undefined;
+  const stages = value.breakable && Number.isFinite(value.breakCount) && Number.isFinite(value.maxBreaks) && (value.maxBreaks ?? 0) > 0
     ? `${value.breakCount}/${value.maxBreaks}`
     : undefined;
-  const detail = stages ? `${kind} · ${stages}` : kind;
-  if (value.broken) return view(settings, label, name, "status", "good", `BROKEN · ${detail}`);
-  if (!Number.isFinite(value.percent)) return view(settings, label, name, "status", "inactive", detail);
-  return view(settings, label, name, "gauge", value.severable ? "danger" : "warning", `${formatPercent(value.percent)} · ${detail}`, value.percent);
+
+  const detailParts: string[] = [];
+  if (Number.isFinite(flinchPercent)) detailParts.push(`F ${formatPercent(flinchPercent)}`);
+  if (specialName && Number.isFinite(specialPercent)) detailParts.push(`${specialName} ${formatPercent(specialPercent)}`);
+  if (stages) detailParts.push(stages);
+  const detail = detailParts.join(" · ") || (specialName ?? "FLINCH");
+
+  const fullyBroken = value.breakable && Number.isFinite(value.maxBreaks) && (value.maxBreaks ?? 0) > 0 && (value.breakCount ?? 0) >= value.maxBreaks!;
+  if (fullyBroken) return view(settings, label, name, "status", "good", `BROKEN · ${stages}`);
+
+  const primary = Number.isFinite(flinchPercent) ? flinchPercent : specialPercent;
+  if (!Number.isFinite(primary)) return view(settings, label, name, "status", "inactive", detail);
+
+  const result = view(settings, label, name, "gauge", specialName ? (value.severable ? "danger" : "warning") : "neutral", detail, primary);
+  if (Number.isFinite(specialPercent) && Number.isFinite(flinchPercent)) {
+    result.secondaryPercent = specialPercent;
+    result.secondaryTone = value.severable ? "danger" : "warning";
+  }
+  return result;
 }
 
 function legacyPart(settings: MetricSettings, label: string, state: WildsState, names: string[], fallback: number): MetricView {
