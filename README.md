@@ -1,5 +1,7 @@
 # WildsDeck
 
+[![CI](https://github.com/EPeillard/WildsDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/EPeillard/WildsDeck/actions/workflows/ci.yml)
+
 WildsDeck puts selected Monster Hunter Wilds telemetry on a classic 5×3 Elgato Stream Deck. It replaces screen-space overlay widgets with readable physical keys and automatically switches between two bundled, editable profiles:
 
 - **WildsDeck - Town** for Support Ship, Ingredients Center, Material Retrieval, Hunter Rank, player status, and any available NPC state.
@@ -130,4 +132,3 @@ CI repeats these checks on Windows for .NET and Linux for TypeScript/manifest/pr
 ## License and attribution
 
 WildsDeck is MIT licensed. HunterPie-derived logic and map data are used under Apache-2.0; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
