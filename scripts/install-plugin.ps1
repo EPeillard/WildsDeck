@@ -33,7 +33,7 @@ try {
     if (-not $SkipProfileImport) {
         $existingListener = Get-NetTCPConnection -LocalPort $BridgePort -State Listen -ErrorAction SilentlyContinue
         if ($existingListener) {
-            Write-Warning "Port $BridgePort is already in use. Profile bootstrap will be skipped; close the running bridge and rerun this script if the bundled profiles are not installed."
+            Write-Warning "Port $BridgePort is already in use. Profile bootstrap will be skipped; close the running bridge and rerun this script if the bundled profile is not installed."
         } else {
             Write-Host "Bootstrapping the bundled WildsDeck profile (Town page, then Hunt page)..."
             Write-Host "Accept the Stream Deck profile-install prompt if one appears."
