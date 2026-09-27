@@ -1,45 +1,64 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const pluginDirectory = "com.wildsdeck.streamdeck.sdPlugin";
-const layouts = ["town", "hunt"];
+const profileName = "WildsDeck";
+const layoutNames = ["town", "hunt"];
+const legacyArchives = ["WildsDeck - Town.streamDeckProfile", "WildsDeck - Hunt.streamDeckProfile"];
 const crcTable = Array.from({ length: 256 }, (_, index) => {
   let value = index;
   for (let bit = 0; bit < 8; bit++) value = (value & 1) ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
   return value >>> 0;
 });
 
-for (const layoutName of layouts) {
+const layouts = [];
+for (const layoutName of layoutNames) {
   const layout = JSON.parse(await readFile(`profiles/${layoutName}.layout.json`, "utf8"));
   validateLayout(layout);
-  const rootId = stableUuid(`${layout.name}:root`).toUpperCase();
-  const pageId = stableUuid(`${layout.name}:page`);
-  const pageFolderId = profileFolderId(pageId);
-  const root = `${rootId}.sdProfile`;
-
-  // Keep the bundled archive device-agnostic. The plugin manifest's DeviceType=0
-  // already limits these profiles to standard 5x3 Stream Deck devices.
-  const profileManifest = {
-    Name: layout.name,
-    Pages: { Current: pageId, Pages: [pageId] },
-    Version: "2.0"
-  };
-  const actions = Object.fromEntries(layout.keys.map((key) => [`${key.x},${key.y}`, profileAction(layout.name, key)]));
-  const pageManifest = { Controllers: [{ Actions: actions, Type: "Keypad" }], Icon: "", Name: "" };
-
-  const files = [
-    [`${root}/manifest.json`, JSON.stringify(profileManifest)],
-    [`${root}/Profiles/${pageFolderId}/manifest.json`, JSON.stringify(pageManifest)]
-  ];
-  const destination = path.join(pluginDirectory, `${layout.name}.streamDeckProfile`);
-  await writeFile(destination, zip(files));
-  console.log(`Generated ${destination}`);
+  layouts.push({ layoutName, layout });
 }
 
-function profileAction(profileName, key) {
+const rootId = stableUuid(`${profileName}:root`).toUpperCase();
+const root = `${rootId}.sdProfile`;
+const pages = layouts.map(({ layoutName, layout }) => {
+  const pageId = stableUuid(`${profileName}:${layoutName}:page`);
+  const pageFolderId = profileFolderId(pageId);
+  const actions = Object.fromEntries(layout.keys.map((key) => [
+    `${key.x},${key.y}`,
+    profileAction(`${profileName}:${layoutName}`, key)
+  ]));
   return {
-    ActionID: stableUuid(`${profileName}:${key.x},${key.y}`),
+    pageId,
+    pageFolderId,
+    manifest: { Controllers: [{ Actions: actions, Type: "Keypad" }], Icon: "", Name: "" }
+  };
+});
+
+// Keep the bundled archive device-agnostic. The plugin manifest's DeviceType=0
+// already limits this profile to standard 5x3 Stream Deck devices.
+const profileManifest = {
+  Name: profileName,
+  Pages: { Current: pages[0].pageId, Pages: pages.map((page) => page.pageId) },
+  Version: "2.0"
+};
+
+const files = [
+  [`${root}/manifest.json`, JSON.stringify(profileManifest)],
+  ...pages.map((page) => [
+    `${root}/Profiles/${page.pageFolderId}/manifest.json`,
+    JSON.stringify(page.manifest)
+  ])
+];
+
+await Promise.all(legacyArchives.map((archive) => rm(path.join(pluginDirectory, archive), { force: true })));
+const destination = path.join(pluginDirectory, `${profileName}.streamDeckProfile`);
+await writeFile(destination, zip(files));
+console.log(`Generated ${destination} with ${pages.length} pages (${layoutNames.join(", ")})`);
+
+function profileAction(pageName, key) {
+  return {
+    ActionID: stableUuid(`${pageName}:${key.x},${key.y}`),
     LinkedTitle: true,
     Name: "Wilds Display",
     Settings: { metric: key.metric, label: key.label },
