@@ -29,9 +29,14 @@ describe("BridgeProcessManager", () => {
 
   it("coalesces concurrent startup requests and throttles repeated launches", async () => {
     let releaseHealth!: (value: boolean) => void;
-    const isHealthy = vi.fn(() => new Promise<boolean>((resolve) => {
-      releaseHealth = resolve;
-    }));
+    let firstHealthCheck = true;
+    const isHealthy = vi.fn(() => {
+      if (!firstHealthCheck) return Promise.resolve(false);
+      firstHealthCheck = false;
+      return new Promise<boolean>((resolve) => {
+        releaseHealth = resolve;
+      });
+    });
     const launch = vi.fn();
     let now = 10_000;
     const dependencies: BridgeProcessDependencies = {
