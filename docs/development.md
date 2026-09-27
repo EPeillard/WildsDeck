@@ -6,7 +6,7 @@
 - Node.js 24, TypeScript 5.9, `@elgato/streamdeck` 2.1
 - Stream Deck software 7.1+ and `@elgato/cli` 1.9
 
-`scripts/build.ps1` restores/builds/tests .NET, publishes a self-contained Windows x64 bridge into the plugin bundle, installs locked npm dependencies, type-checks/tests/builds the plugin, regenerates the profiles, and validates the `.sdPlugin`.
+`scripts/build.ps1` restores/builds/tests .NET, publishes a self-contained Windows x64 bridge into the plugin bundle, installs locked npm dependencies, type-checks/tests/builds the plugin, regenerates the bundled two-page profile, and validates the `.sdPlugin`.
 
 The bundled runtime is generated at:
 
@@ -64,6 +64,8 @@ npx streamdeck restart com.wildsdeck.streamdeck
 A TypeScript-only build does not create `bin/bridge/`; run `scripts/publish-bridge.ps1` or the full root build before testing automatic startup.
 
 Use `npm run watch` after the first link. Plugin logs are written by Stream Deck under the plugin's normal log directory.
+
+`npm run profiles` generates `com.wildsdeck.streamdeck.sdPlugin/WildsDeck.streamDeckProfile`. Its page order is part of the runtime contract: Town is page 0 and Hunt is page 1.
 
 ## Mock development
 
