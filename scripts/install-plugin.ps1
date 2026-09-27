@@ -35,8 +35,8 @@ try {
         if ($existingListener) {
             Write-Warning "Port $BridgePort is already in use. Profile bootstrap will be skipped; close the running bridge and rerun this script if the bundled profiles are not installed."
         } else {
-            Write-Host "Bootstrapping bundled profiles through Stream Deck (Town, then Hunt)..."
-            Write-Host "Accept the Stream Deck profile-install prompts as they appear."
+            Write-Host "Bootstrapping the bundled WildsDeck profile (Town page, then Hunt page)..."
+            Write-Host "Accept the Stream Deck profile-install prompt if one appears."
 
             $startArgs = @{
                 FilePath = $BridgeExe
