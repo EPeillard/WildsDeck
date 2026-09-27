@@ -2,10 +2,10 @@
 
 [![CI](https://github.com/EPeillard/WildsDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/EPeillard/WildsDeck/actions/workflows/ci.yml)
 
-WildsDeck puts selected Monster Hunter Wilds telemetry on a classic 5×3 Elgato Stream Deck. It replaces screen-space overlay widgets with readable physical keys and automatically switches between two bundled, editable profiles:
+WildsDeck puts selected Monster Hunter Wilds telemetry on a classic 5×3 Elgato Stream Deck. It replaces screen-space overlay widgets with readable physical keys and automatically switches between two pages of one bundled, editable **WildsDeck** profile:
 
-- **WildsDeck - Town** for Support Ship, Ingredients Center, Material Retrieval, Hunter Rank, player status, and any available NPC state.
-- **WildsDeck - Hunt** for target monster, HP, rage, stamina, capture readiness, parts, ailments, damage, and party share.
+- **Page 0 — Town** for Support Ship, Ingredients Center, Material Retrieval, Hunter Rank, player status, and any available NPC state.
+- **Page 1 — Hunt** for target monster, HP, rage, stamina, capture readiness, parts, ailments, damage, and party share.
 
 The project is an early MVP. Use it at your own risk: game updates change memory layouts, and a matching address map is mandatory.
 
@@ -19,8 +19,9 @@ WildsDeck.Bridge (.NET 10, bundled Windows executable)
         │  ws://127.0.0.1:47653/ws
         ▼
 WildsDeck Stream Deck plugin (TypeScript, Node 24)
-        ├── WildsDeck - Town
-        └── WildsDeck - Hunt
+        └── WildsDeck profile
+            ├── Page 0: Town
+            └── Page 1: Hunt
 ```
 
 The bridge owns game/memory semantics. The plugin only consumes the stable versioned telemetry protocol and renders SVG key images. The plugin health-checks the local bridge, starts the bundled executable when needed, retries after bridge failures, and launches it with a parent-process guard so it exits when the plugin exits. See [architecture](docs/architecture.md) and [telemetry](docs/telemetry.md).
@@ -31,7 +32,7 @@ To run an already built/installed plugin:
 
 - Windows 10 or later
 - Elgato Stream Deck software 7.1 or later
-- Standard Stream Deck, DeviceType `0`, 5 columns × 3 rows for the bundled profiles
+- Standard Stream Deck, DeviceType `0`, 5 columns × 3 rows for the bundled profile
 - Monster Hunter Wilds for real telemetry; it is not needed for mock mode
 
 To build from source, also install:
@@ -107,9 +108,9 @@ WildsDeck's memory assembly exposes only:
 
 There is no memory write API, DLL injection, instruction patching, input simulation, save manipulation, or anti-cheat bypass. Closing or restarting the game is treated as a normal reconnect event.
 
-## Bundled profiles
+## Bundled profile
 
-Both `.streamDeckProfile` archives are generated from versioned 5×3 JSON specs during `npm run build`, registered with `DeviceType = 0`, `Readonly = false`, and `AutoInstall = true`. Elgato's CLI validates the plugin and CI verifies both archives. The archives follow the structure of Elgato's official bundled-profile sample; see [layout documentation](docs/streamdeck-layouts.md) for the manual fallback procedure if a future Stream Deck release changes the undocumented archive internals.
+`WildsDeck.streamDeckProfile` is generated from the two versioned 5×3 JSON page specs during `npm run build`, registered with `DeviceType = 0`, `Readonly = false`, and `AutoInstall = true`. Town is page 0 and Hunt is page 1; the plugin selects the page with the SDK's `switchToProfile(..., page)` parameter. Elgato's CLI validates the plugin and CI verifies the archive. See [layout documentation](docs/streamdeck-layouts.md) for the manual fallback procedure if a future Stream Deck release changes the undocumented archive internals.
 
 ## Known limitations
 
