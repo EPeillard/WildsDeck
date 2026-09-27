@@ -53,7 +53,7 @@ From PowerShell at the repository root:
 
 That is enough. `build.ps1` publishes the bridge, its memory maps, and `wildsdeck.json` into the plugin bundle. Once the plugin is loaded, Stream Deck starts the bridge automatically; no separate terminal or `dotnet run` command is required. The bridge can start before Monster Hunter Wilds and waits for the game process.
 
-`install-plugin.ps1` uses the current Elgato CLI development workflow: it enables developer mode, links the `.sdPlugin` directory, bootstraps both bundled profiles through a short mock bridge session, and restarts the plugin. It does not require administrator privileges.
+`install-plugin.ps1` uses the current Elgato CLI development workflow: it enables developer mode, links the `.sdPlugin` directory, bootstraps the bundled two-page profile through a short mock bridge session, and restarts the plugin. It does not require administrator privileges.
 
 ## Mock demo
 
