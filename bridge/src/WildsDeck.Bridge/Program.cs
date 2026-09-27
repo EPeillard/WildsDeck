@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using WildsDeck.Bridge;
 using WildsDeck.Memory;
 
@@ -61,8 +62,38 @@ Console.WriteLine("----------------");
 Console.WriteLine(options.MockMode == MockMode.None ? "Waiting for MonsterHunterWilds.exe..." : $"Mock mode: {options.MockMode.ToString().ToUpperInvariant()}");
 Console.WriteLine($"WebSocket: ws://127.0.0.1:{options.WebSocketPort}/ws");
 Console.WriteLine($"Maps: {options.MapDirectory}");
+if (options.ParentPid is int parentPid)
+    Console.WriteLine($"Parent process: {parentPid}");
 Console.WriteLine();
 
+if (options.ParentPid is int monitoredParentPid)
+    _ = MonitorParentProcessAsync(monitoredParentPid, app);
+
 await app.RunAsync();
+
+static async Task MonitorParentProcessAsync(int parentPid, WebApplication app)
+{
+    if (parentPid == Environment.ProcessId)
+        return;
+
+    try
+    {
+        using Process parent = Process.GetProcessById(parentPid);
+        await parent.WaitForExitAsync();
+        app.Logger.LogInformation("Parent process {ParentPid} exited; stopping bridge.", parentPid);
+    }
+    catch (ArgumentException)
+    {
+        app.Logger.LogInformation("Parent process {ParentPid} is not running; stopping bridge.", parentPid);
+    }
+    catch (InvalidOperationException)
+    {
+        app.Logger.LogInformation("Parent process {ParentPid} could not be monitored; stopping bridge.", parentPid);
+    }
+    finally
+    {
+        app.Lifetime.StopApplication();
+    }
+}
 
 public partial class Program;

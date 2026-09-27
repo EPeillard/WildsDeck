@@ -19,6 +19,38 @@ jobs:
       - run: dotnet restore bridge/WildsDeck.Bridge.slnx
       - run: dotnet build bridge/WildsDeck.Bridge.slnx --configuration Release --no-restore
       - run: dotnet test bridge/WildsDeck.Bridge.slnx --configuration Release --no-build
+      - name: Publish bundled bridge
+        shell: pwsh
+        run: .\scripts\publish-bridge.ps1 -OutputDirectory "$env:RUNNER_TEMP\WildsDeckBridge"
+      - name: Smoke test bundled bridge
+        shell: pwsh
+        run: |
+          $bridgeDirectory = "$env:RUNNER_TEMP\WildsDeckBridge"
+          $bridgeExe = Join-Path $bridgeDirectory "WildsDeck.Bridge.exe"
+          if (-not (Test-Path $bridgeExe)) { throw "Bundled bridge executable is missing." }
+          if (-not (Test-Path (Join-Path $bridgeDirectory "maps"))) { throw "Bundled bridge maps are missing." }
+          if (-not (Test-Path (Join-Path $bridgeDirectory "wildsdeck.json"))) { throw "Bundled bridge config is missing." }
+
+          $process = Start-Process -FilePath $bridgeExe -ArgumentList @("--mock-town", "--port", "47654") -WorkingDirectory $bridgeDirectory -PassThru -WindowStyle Hidden
+          try {
+            $healthy = $false
+            for ($attempt = 0; $attempt -lt 20; $attempt++) {
+              try {
+                $health = Invoke-RestMethod -Uri "http://127.0.0.1:47654/health" -TimeoutSec 1
+                if ($health.status -eq "ok") {
+                  $healthy = $true
+                  break
+                }
+              } catch {
+                Start-Sleep -Milliseconds 250
+              }
+            }
+            if (-not $healthy) { throw "Bundled bridge did not become healthy." }
+          } finally {
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
 
   streamdeck:
     runs-on: ubuntu-latest
