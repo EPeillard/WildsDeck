@@ -9,6 +9,8 @@ dotnet restore (Join-Path $ProjectRoot "bridge/WildsDeck.Bridge.slnx")
 dotnet build (Join-Path $ProjectRoot "bridge/WildsDeck.Bridge.slnx") --configuration Release --no-restore
 dotnet test (Join-Path $ProjectRoot "bridge/WildsDeck.Bridge.slnx") --configuration Release --no-build
 
+& (Join-Path $PSScriptRoot "publish-bridge.ps1")
+
 Write-Host "Building and validating Stream Deck plugin..."
 Push-Location (Join-Path $ProjectRoot "streamdeck")
 try {
@@ -26,4 +28,3 @@ try {
 }
 
 Write-Host "Build complete: streamdeck/com.wildsdeck.streamdeck.sdPlugin"
-

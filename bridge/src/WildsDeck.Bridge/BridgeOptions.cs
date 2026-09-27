@@ -10,6 +10,7 @@ public sealed record BridgeOptions
     public int WebSocketPort { get; init; } = 47653;
     public string MapDirectory { get; init; } = "maps";
     public MockMode MockMode { get; init; }
+    public int? ParentPid { get; init; }
 
     public static BridgeOptions Load(string[] args)
     {
@@ -34,13 +35,19 @@ public sealed record BridgeOptions
         string? portText = ValueAfter(args, "--port");
         int port = portText is not null && int.TryParse(portText, out int parsedPort) ? parsedPort : options.WebSocketPort;
 
+        int? parentPid = options.ParentPid;
+        string? parentPidText = ValueAfter(args, "--parent-pid");
+        if (parentPidText is not null)
+            parentPid = int.TryParse(parentPidText, out int parsedParentPid) && parsedParentPid > 0 ? parsedParentPid : null;
+
         return options with
         {
             MockMode = mockMode,
             WebSocketPort = Math.Clamp(port, 1024, 65535),
             PollIntervalMs = Math.Clamp(options.PollIntervalMs, 50, 5000),
             ModeDebounceMs = Math.Clamp(options.ModeDebounceMs, 0, 10000),
-            MapDirectory = ResolveMapDirectory(mapDirectory ?? options.MapDirectory)
+            MapDirectory = ResolveMapDirectory(mapDirectory ?? options.MapDirectory),
+            ParentPid = parentPid
         };
     }
 
@@ -79,4 +86,3 @@ public enum MockMode
     Town,
     Hunt
 }
-
