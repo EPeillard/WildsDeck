@@ -1,13 +1,9 @@
 import streamDeck, { DeviceType } from "@elgato/streamdeck";
 import type { ConnectionSnapshot, GameMode } from "./telemetry.js";
-
-const profiles: Partial<Record<GameMode, string>> = {
-  town: "WildsDeck - Town",
-  hunt: "WildsDeck - Hunt"
-};
+import { pageForMode, WILDSDECK_PROFILE } from "./profile-pages.js";
 
 export class ProfileManager {
-  readonly #lastProfileByDevice = new Map<string, string>();
+  readonly #lastPageByDevice = new Map<string, number>();
   #mode: GameMode = "unknown";
 
   update(snapshot: ConnectionSnapshot): void {
@@ -24,16 +20,15 @@ export class ProfileManager {
   }
 
   async syncDevice(deviceId: string): Promise<void> {
-    const profile = profiles[this.#mode];
-    if (!profile || this.#lastProfileByDevice.get(deviceId) === profile) return;
+    const page = pageForMode(this.#mode);
+    if (page === undefined || this.#lastPageByDevice.get(deviceId) === page) return;
 
-    await streamDeck.profiles.switchToProfile(deviceId, profile);
-    this.#lastProfileByDevice.set(deviceId, profile);
-    streamDeck.logger.info(`Switched ${deviceId} to ${profile}`);
+    await streamDeck.profiles.switchToProfile(deviceId, WILDSDECK_PROFILE, page);
+    this.#lastPageByDevice.set(deviceId, page);
+    streamDeck.logger.info(`Switched ${deviceId} to ${WILDSDECK_PROFILE} page ${page} (${this.#mode})`);
   }
 
   disconnected(deviceId: string): void {
-    this.#lastProfileByDevice.delete(deviceId);
+    this.#lastPageByDevice.delete(deviceId);
   }
 }
-
