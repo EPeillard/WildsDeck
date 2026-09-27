@@ -15,7 +15,7 @@ The project is an early MVP. Use it at your own risk: game updates change memory
 MonsterHunterWilds.exe
         │  ReadProcessMemory only
         ▼
-WildsDeck.Bridge (.NET 10, localhost WebSocket)
+WildsDeck.Bridge (.NET 10, bundled Windows executable)
         │  ws://127.0.0.1:47653/ws
         ▼
 WildsDeck Stream Deck plugin (TypeScript, Node 24)
@@ -23,16 +23,23 @@ WildsDeck Stream Deck plugin (TypeScript, Node 24)
         └── WildsDeck - Hunt
 ```
 
-The bridge owns game/memory semantics. The plugin only consumes the stable versioned telemetry protocol and renders SVG key images. See [architecture](docs/architecture.md) and [telemetry](docs/telemetry.md).
+The bridge owns game/memory semantics. The plugin only consumes the stable versioned telemetry protocol and renders SVG key images. The plugin health-checks the local bridge, starts the bundled executable when needed, retries after bridge failures, and launches it with a parent-process guard so it exits when the plugin exits. See [architecture](docs/architecture.md) and [telemetry](docs/telemetry.md).
 
 ## Requirements
 
+To run an already built/installed plugin:
+
 - Windows 10 or later
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 24 or later](https://nodejs.org/)
 - Elgato Stream Deck software 7.1 or later
 - Standard Stream Deck, DeviceType `0`, 5 columns × 3 rows for the bundled profiles
 - Monster Hunter Wilds for real telemetry; it is not needed for mock mode
+
+To build from source, also install:
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [Node.js 24 or later](https://nodejs.org/)
+
+The packaged bridge is published self-contained for Windows x64, so running the built plugin does not require a separate .NET installation.
 
 ## Quick start
 
@@ -41,10 +48,11 @@ From PowerShell at the repository root:
 ```powershell
 .\scripts\build.ps1
 .\scripts\install-plugin.ps1 -SkipBuild
-dotnet run --project .\bridge\src\WildsDeck.Bridge\WildsDeck.Bridge.csproj
 ```
 
-`install-plugin.ps1` uses the current Elgato CLI development workflow: it enables developer mode, links the `.sdPlugin` directory, and restarts the plugin. It does not require administrator privileges. On first installation, Stream Deck installs the two profiles declared by the plugin manifest.
+That is enough. `build.ps1` publishes the bridge, its memory maps, and `wildsdeck.json` into the plugin bundle. Once the plugin is loaded, Stream Deck starts the bridge automatically; no separate terminal or `dotnet run` command is required. The bridge can start before Monster Hunter Wilds and waits for the game process.
+
+`install-plugin.ps1` uses the current Elgato CLI development workflow: it enables developer mode, links the `.sdPlugin` directory, bootstraps both bundled profiles through a short mock bridge session, and restarts the plugin. It does not require administrator privileges.
 
 ## Mock demo
 
@@ -54,7 +62,7 @@ The fastest end-to-end demonstration is:
 .\scripts\dev.ps1
 ```
 
-This builds and links the plugin, then runs a repeating Town → Hunt → falling HP → rage → capture-ready → Town sequence. Fixed modes are also available:
+This builds and links the plugin, then runs a repeating Town → Hunt → falling HP → rage → capture-ready → Town sequence using the same packaged bridge executable. Fixed modes are also available from source:
 
 ```powershell
 dotnet run --project .\bridge\src\WildsDeck.Bridge\WildsDeck.Bridge.csproj -- --mock-town
@@ -77,7 +85,7 @@ The bridge loads `wildsdeck.json` from its working directory when present. Defau
 }
 ```
 
-The server binds only to `127.0.0.1`. Use `--config <path>`, `--port <port>`, or `--map-directory <path>` for local overrides.
+The server binds only to `127.0.0.1`. Use `--config <path>`, `--port <port>`, or `--map-directory <path>` for local overrides. The plugin additionally uses `--parent-pid` internally so an automatically launched bridge terminates with its Stream Deck plugin process.
 
 ## Memory maps
 
@@ -119,6 +127,7 @@ See [HunterPie reference and confidence table](docs/hunterpie-reference.md) for 
 
 ```powershell
 dotnet test .\bridge\WildsDeck.Bridge.slnx
+.\scripts\publish-bridge.ps1
 cd .\streamdeck
 npm ci
 npm run check
@@ -127,7 +136,7 @@ npm run build
 npm run validate
 ```
 
-CI repeats these checks on Windows for .NET and Linux for TypeScript/manifest/profile validation. More details are in [development.md](docs/development.md).
+CI repeats these checks, including a Windows smoke test of the self-contained bridge package. More details are in [development.md](docs/development.md).
 
 ## License and attribution
 
