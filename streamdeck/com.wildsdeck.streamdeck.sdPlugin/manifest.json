@@ -30,7 +30,9 @@
       "Icon": "imgs/actions/metric",
       "Tooltip": "Display a WildsDeck telemetry metric",
       "PropertyInspectorPath": "ui/metric.html",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "DisableCaching": true,
       "UserTitleEnabled": false,
       "States": [
@@ -44,14 +46,7 @@
   ],
   "Profiles": [
     {
-      "Name": "WildsDeck - Town",
-      "DeviceType": 0,
-      "Readonly": false,
-      "AutoInstall": true,
-      "DontAutoSwitchWhenInstalled": true
-    },
-    {
-      "Name": "WildsDeck - Hunt",
+      "Name": "WildsDeck",
       "DeviceType": 0,
       "Readonly": false,
       "AutoInstall": true,
