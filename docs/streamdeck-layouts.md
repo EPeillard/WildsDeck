@@ -1,36 +1,41 @@
 # Stream Deck layouts
 
-The source of truth is `streamdeck/profiles/*.layout.json`. `npm run profiles` deterministically generates exactly two archives at the plugin root because the manifest's `Profiles[].Name` is both a relative archive path and the exact string accepted by `switchToProfile`.
+The source of truth is `streamdeck/profiles/*.layout.json`. `npm run profiles` deterministically generates one bundled archive, `WildsDeck.streamDeckProfile`, containing two pages in a fixed order:
 
-## WildsDeck - Hunt
+- page `0`: Town
+- page `1`: Hunt
+
+The plugin calls `switchToProfile(deviceId, "WildsDeck", page)` whenever the stable game mode changes.
+
+## Page 0 — Town
+
+| Row | Key 1 | Key 2 | Key 3 | Key 4 | Key 5 |
+|---|---|---|---|---|---|
+| 1 | Rysher | Murtabak | Apar | Plumpeach | Sabar |
+| 2 | Support Ship | Ingredients | HR | Player | Weapon |
+| 3 | Attack | Affinity | Mode | Bridge | WildsDeck status |
+
+## Page 1 — Hunt
 
 | Row | Key 1 | Key 2 | Key 3 | Key 4 | Key 5 |
 |---|---|---|---|---|---|
 | 1 | Monster | HP | Rage | Stamina | Capture |
-| 2 | Head | Body | Tail | Ailment 1 | Ailment 2 |
+| 2 | Part 1 | Part 2 | Part 3 | Ailment | Next ailment |
 | 3 | Damage | Share % | Party | Attack | Affinity |
 
-## WildsDeck - Town
-
-| Row | Key 1 | Key 2 | Key 3 | Key 4 | Key 5 |
-|---|---|---|---|---|---|
-| 1 | Support Ship | Ingredients | Material | NPC alert | HR |
-| 2 | NPC 1 | NPC 2 | NPC 3 | Player | Weapon |
-| 3 | Attack | Affinity | Mode | Bridge | WildsDeck status |
-
-Unavailable real NPC values render `— / unavailable`; they are never replaced with invented names.
+Unavailable real values render `— / unavailable`; they are never replaced with invented data.
 
 ## Profile generation and fallback
 
-The generator follows the exported profile structure used by Elgato's official `lights-out` SDK sample. `streamdeck validate` validates the containing plugin and CI runs `unzip -t` on both archives. Elgato does not publish a profile-authoring CLI or a formal schema for the internal archive manifests.
+The generator follows the exported profile structure used by Elgato's official bundled-profile examples: one `.sdProfile` root manifest references both page manifests. `streamdeck validate` validates the containing plugin and CI runs `unzip -t` on the generated archive. Elgato does not publish a profile-authoring CLI or a formal schema for the internal archive manifests.
 
-If a future Stream Deck release rejects the generated archives:
+If a future Stream Deck release rejects the generated archive:
 
 1. Link the plugin with `scripts/install-plugin.ps1`.
-2. Create a standard 5×3 profile named exactly `WildsDeck - Town`.
-3. Drag `Wilds Display` onto all keys and choose metrics from `town.layout.json` by coordinate.
-4. Export the profile, replace `WildsDeck - Town.streamDeckProfile`, and repeat for Hunt.
-5. Keep the two manifest `Profiles` entries unchanged and run `npm run validate`.
+2. Create a standard 5×3 profile named exactly `WildsDeck`.
+3. Configure its first page from `town.layout.json`.
+4. Add a second page and configure it from `hunt.layout.json`.
+5. Export the profile and replace `WildsDeck.streamDeckProfile`.
+6. Keep the manifest `Profiles` entry named `WildsDeck` and run `npm run validate`.
 
-The profiles are declared `Readonly = false`, so imported keys remain customizable.
-
+The profile is declared `Readonly = false`, so imported keys remain customizable.
